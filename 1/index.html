@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Monitor</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0d0e11;
+  --bg2:       #13151a;
+  --bg3:       #1a1d24;
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.13);
+  --text:      #e8eaf0;
+  --text2:     #7c8394;
+  --text3:     #454a58;
+  --blue:      #3b82f6;
+  --blue-dim:  rgba(59,130,246,0.12);
+  --amber:     #f59e0b;
+  --amber-dim: rgba(245,158,11,0.12);
+  --purple:    #a78bfa;
+  --purple-dim:rgba(167,139,250,0.12);
+  --green:     #10b981;
+  --green-dim: rgba(16,185,129,0.12);
+  --red:       #ef4444;
+  --yellow:    #eab308;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', sans-serif;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── layout ── */
+.shell {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+
+/* ── topbar ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 2rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.topbar-title {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: blink 1.4s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+.topbar-clock {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+}
+.conn-status {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+.conn-ok   { color: var(--green); border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.08); }
+.conn-err  { color: var(--red);   border-color: rgba(239,68,68,0.3);  background: rgba(239,68,68,0.08);  }
+.conn-wait { color: var(--text3); border-color: var(--border);         background: transparent; }
+
+/* ── temp cards ── */
+.temp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+.card:hover { border-color: var(--border2); }
+
+.card-accent {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  border-radius: 12px 12px 0 0;
+  opacity: 0.7;
+}
+.card-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chip {
+  display: inline-block;
+  width: 4px; height: 4px;
+  border-radius: 1px;
+}
+.temp-number {
+  font-family: var(--mono);
+  font-size: 62px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+  transition: color 0.5s;
+}
+.temp-unit {
+  font-family: var(--mono);
+  font-size: 20px;
+  color: var(--text3);
+  vertical-align: super;
+  margin-left: 2px;
+}
+.temp-bar-wrap {
+  margin: 14px 0 10px;
+  height: 3px;
+  background: var(--bg3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.temp-bar {
+  height: 100%;
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.8s cubic-bezier(.4,0,.2,1), background 0.5s;
+}
+.temp-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+.temp-minmax {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text3);
+}
+.badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 4px;
+}
+.badge-cool   { background: rgba(16,185,129,0.15); color: #34d399; }
+.badge-warm   { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.badge-hot    { background: rgba(239,68,68,0.15);  color: #f87171; }
+
+/* ── sparkline ── */
+.spark-wrap { height: 36px; margin: 10px 0 0; }
+canvas.spark { width: 100%; height: 36px; display: block; }
+
+/* ── activity panel ── */
+.activity-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 12px;
+}
+.activity-card:hover { border-color: var(--border2); }
+.section-label {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 1rem;
+}
+
+.act-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.act-row:last-child { margin-bottom: 0; }
+.act-name {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text2);
+  min-width: 40px;
+}
+.act-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: visible;
+  position: relative;
+}
+.act-fill {
+  height: 100%;
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.9s cubic-bezier(.4,0,.2,1);
+  position: relative;
+}
+.act-fill::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: inherit;
+  box-shadow: 0 0 6px currentColor;
+}
+.act-pct {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 500;
+  min-width: 42px;
+  text-align: right;
+  color: var(--text);
+}
+.act-detail {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text3);
+  min-width: 80px;
+  text-align: right;
+}
+
+/* ── detail row ── */
+.detail-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.detail-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+}
+.detail-card:hover { border-color: var(--border2); }
+.detail-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.detail-key {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+}
+.detail-val {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+/* ── no-data overlay ── */
+.no-data {
+  position: fixed;
+  inset: 0;
+  background: rgba(13,14,17,0.94);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  gap: 16px;
+}
+.no-data.hidden { display: none; }
+.no-data-title {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text2);
+  letter-spacing: 0.08em;
+}
+.no-data-hint {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  text-align: center;
+  line-height: 1.8;
+}
+.spinner {
+  width: 24px; height: 24px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+.drive-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 12px; margin-bottom: 12px; }
+.drive-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .3s;
+}
+.drive-card:hover { border-color: var(--border2); }
+.drive-name {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text3);
+  letter-spacing: .07em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 8px;
+}
+.drive-temp {
+  font-family: var(--mono);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  transition: color .5s;
+}
+.drive-temp-unit { font-size: 14px; color: var(--text3); vertical-align: super; margin-left: 2px; }
+.drive-bar-wrap { height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin: 10px 0 6px; }
+.drive-bar { height: 100%; border-radius: 2px; width: 0%; transition: width .8s cubic-bezier(.4,0,.2,1), background .5s; }
+.no-sensor { font-family: var(--mono); font-size: 11px; color: var(--text3); padding: 8px 0; }
+
+
+/* ── Battery card ── */
+.battery-section { margin-bottom: 12px; }
+.battery-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  transition: border-color .3s;
+}
+.battery-card:hover { border-color: var(--border2); }
+.battery-top { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+.battery-icon-wrap { position: relative; width: 52px; height: 26px; flex-shrink: 0; }
+.battery-shell {
+  width: 46px; height: 26px;
+  border: 2px solid var(--border2);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+.battery-shell::after {
+  content: '';
+  position: absolute;
+  right: -6px; top: 50%;
+  transform: translateY(-50%);
+  width: 4px; height: 10px;
+  background: var(--border2);
+  border-radius: 0 2px 2px 0;
+}
+.battery-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  border-radius: 2px;
+  transition: width .8s cubic-bezier(.4,0,.2,1), background .5s;
+}
+.battery-pct-big {
+  font-family: var(--mono);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  transition: color .5s;
+}
+.battery-meta { display: flex; flex-direction: column; gap: 3px; margin-left: auto; text-align: right; }
+.battery-status {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.status-charging    { background: rgba(16,185,129,.15); color: #34d399; }
+.status-discharging { background: rgba(245,158,11,.15);  color: #fbbf24; }
+.status-full        { background: rgba(59,130,246,.15);  color: #60a5fa; }
+.battery-time {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text3);
+}
+.battery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px,1fr));
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.bat-stat { display: flex; flex-direction: column; gap: 3px; }
+.bat-stat-key { font-family: var(--mono); font-size: 13px; color: var(--text3); letter-spacing: .07em; text-transform: uppercase; }
+.bat-stat-val { font-family: var(--mono); font-size: 16px; font-weight: 500; color: var(--text); }
+.health-bar-wrap { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-top: 5px; }
+.health-bar { height: 100%; border-radius: 2px; transition: width .8s cubic-bezier(.4,0,.2,1), background .5s; }
+
+
+/* ── Speed cards (disk R/W + network) ── */
+.speed-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.speed-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  transition: border-color .3s;
+}
+.speed-card:hover { border-color: var(--border2); }
+.speed-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+.speed-item { display: flex; flex-direction: column; gap: 4px; }
+.speed-arrow { font-size: 13px; margin-right: 4px; }
+.speed-label { font-family: var(--mono); font-size: 13px; color: var(--text3); letter-spacing:.06em; }
+.speed-val {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  transition: color .4s;
+}
+.speed-unit { font-family: var(--mono); font-size: 12px; color: var(--text3); margin-left: 3px; }
+.iface-tag { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 2px; letter-spacing:.05em; }
+
+/* ── no-gpu notice ── */
+.no-gpu-notice {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  text-align: center;
+  padding: 8px 0 0;
+}
+
+@media (max-width: 600px) {
+  .temp-row { grid-template-columns: 1fr; }
+  .detail-row { grid-template-columns: 1fr; }
+  .temp-number { font-size: 40px; }
+}
+</style>
+</head>
+<body>
+
+<!-- No-server overlay -->
+<div class="no-data" id="overlay">
+  <div class="spinner"></div>
+  <div class="no-data-title">Đang kết nối server...</div>
+  <div class="no-data-hint" id="overlay-hint">
+    Đảm bảo server.py đang chạy<br>
+    <code style="color:var(--blue)">python server.py</code>
+  </div>
+</div>
+
+<div class="shell">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="live-dot"></div>
+    <div class="topbar-title">System Monitor</div>
+    <div class="conn-status conn-wait" id="conn-badge">CONNECTING</div>
+    <div class="topbar-clock" id="clock">--:--:--</div>
+  </div>
+
+  <!-- Temperature cards -->
+  <div class="temp-row">
+    <!-- CPU Temp -->
+    <div class="card">
+      <div class="card-accent" style="background: linear-gradient(90deg,var(--blue),transparent)"></div>
+      <div class="card-tag">
+        <div class="chip" style="background:var(--blue)"></div>
+        CPU · Temperature
+      </div>
+      <div>
+        <span class="temp-number" id="cpu-temp" style="color:var(--blue)">--</span><span class="temp-unit">°C</span>
+      </div>
+      <div class="temp-bar-wrap">
+        <div class="temp-bar" id="cpu-temp-bar" style="background:var(--blue)"></div>
+      </div>
+      <div class="temp-footer">
+        <span class="temp-minmax" id="cpu-minmax">— / —</span>
+        <span class="badge badge-cool" id="cpu-badge">—</span>
+      </div>
+      <div class="spark-wrap"><canvas class="spark" id="spark-cpu-temp"></canvas></div>
+    </div>
+
+    <!-- GPU Temp -->
+    <div class="card">
+      <div class="card-accent" style="background: linear-gradient(90deg,var(--amber),transparent)"></div>
+      <div class="card-tag">
+        <div class="chip" style="background:var(--amber)"></div>
+        GPU · Temperature
+      </div>
+      <div>
+        <span class="temp-number" id="gpu-temp" style="color:var(--amber)">--</span><span class="temp-unit">°C</span>
+      </div>
+      <div class="temp-bar-wrap">
+        <div class="temp-bar" id="gpu-temp-bar" style="background:var(--amber)"></div>
+      </div>
+      <div class="temp-footer">
+        <span class="temp-minmax" id="gpu-minmax">— / —</span>
+        <span class="badge badge-cool" id="gpu-badge">—</span>
+      </div>
+      <div class="spark-wrap"><canvas class="spark" id="spark-gpu-temp"></canvas></div>
+      <div class="no-gpu-notice" id="gpu-notice" style="display:none">
+        Không phát hiện GPU / driver NVIDIA
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Storage & RAM temperatures -->
+  <div id="extra-temps-section">
+    <!-- Drive temps (dynamic) -->
+    <div id="drive-temp-row" class="drive-row" style="display:none"></div>
+
+    <!-- RAM temp (chỉ hiện nếu có) -->
+    <div id="ram-temp-card" class="card" style="display:none; margin-bottom:12px">
+      <div class="card-accent" style="background:linear-gradient(90deg,var(--purple),transparent)"></div>
+      <div class="card-tag">
+        <div class="chip" style="background:var(--purple)"></div>
+        RAM · Temperature
+      </div>
+      <div>
+        <span class="temp-number" id="ram-temp-val" style="color:var(--purple)">--</span><span class="temp-unit">°C</span>
+      </div>
+      <div class="temp-bar-wrap">
+        <div class="temp-bar" id="ram-temp-bar" style="background:var(--purple)"></div>
+      </div>
+      <div class="temp-footer">
+        <span class="temp-minmax" id="ram-temp-minmax">— / —</span>
+        <span class="badge" id="ram-temp-badge">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity bars -->
+  <div class="activity-card">
+    <div class="section-label">Mức hoạt động</div>
+
+    <div class="act-row">
+      <div class="act-name">CPU</div>
+      <div class="act-track">
+        <div class="act-fill" id="bar-cpu" style="background:var(--blue)"></div>
+      </div>
+      <div class="act-pct" id="pct-cpu" style="color:var(--blue)">--%</div>
+      <div class="act-detail" id="detail-cpu-freq">-- GHz</div>
+    </div>
+
+    <div class="act-row">
+      <div class="act-name">GPU</div>
+      <div class="act-track">
+        <div class="act-fill" id="bar-gpu" style="background:var(--amber)"></div>
+      </div>
+      <div class="act-pct" id="pct-gpu" style="color:var(--amber)">--%</div>
+      <div class="act-detail" id="detail-gpu">—</div>
+    </div>
+
+    <div class="act-row">
+      <div class="act-name">RAM</div>
+      <div class="act-track">
+        <div class="act-fill" id="bar-ram" style="background:var(--purple)"></div>
+      </div>
+      <div class="act-pct" id="pct-ram" style="color:var(--purple)">--%</div>
+      <div class="act-detail" id="detail-ram">-- / -- GB</div>
+    </div>
+
+    <div class="act-row">
+      <div class="act-name">SSD</div>
+      <div class="act-track">
+        <div class="act-fill" id="bar-ssd" style="background:var(--green)"></div>
+      </div>
+      <div class="act-pct" id="pct-ssd" style="color:var(--green)">--%</div>
+      <div class="act-detail" id="detail-ssd">I/O Activity</div>
+    </div>
+  </div>
+
+
+  <!-- Disk R/W + Network -->
+  <div class="speed-row">
+    <!-- Disk -->
+    <div class="speed-card">
+      <div class="card-accent" style="background:linear-gradient(90deg,var(--green),transparent)"></div>
+      <div class="card-tag">
+        <div class="chip" style="background:var(--green)"></div>
+        Disk · Read / Write
+      </div>
+      <div class="speed-grid">
+        <div class="speed-item">
+          <div class="speed-label"><span class="speed-arrow" style="color:var(--blue)">↓</span>Read</div>
+          <div><span class="speed-val" id="disk-read" style="color:var(--blue)">0</span><span class="speed-unit">MB/s</span></div>
+        </div>
+        <div class="speed-item">
+          <div class="speed-label"><span class="speed-arrow" style="color:var(--amber)">↑</span>Write</div>
+          <div><span class="speed-val" id="disk-write" style="color:var(--amber)">0</span><span class="speed-unit">MB/s</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Network -->
+    <div class="speed-card">
+      <div class="card-accent" style="background:linear-gradient(90deg,var(--purple),transparent)"></div>
+      <div class="card-tag">
+        <div class="chip" style="background:var(--purple)"></div>
+        Network · Down / Up
+      </div>
+      <div class="speed-grid">
+        <div class="speed-item">
+          <div class="speed-label"><span class="speed-arrow" style="color:var(--blue)">↓</span>Down</div>
+          <div><span class="speed-val" id="net-down" style="color:var(--blue)">0</span><span class="speed-unit">MB/s</span></div>
+        </div>
+        <div class="speed-item">
+          <div class="speed-label"><span class="speed-arrow" style="color:var(--green)">↑</span>Up</div>
+          <div><span class="speed-val" id="net-up" style="color:var(--green)">0</span><span class="speed-unit">MB/s</span></div>
+        </div>
+      </div>
+      <div class="iface-tag" id="net-iface">—</div>
+    </div>
+  </div>
+
+  <!-- Detail cards -->
+  <div class="detail-row">
+    <div class="detail-card">
+      <div class="section-label">CPU · Chi tiết</div>
+      <div class="spark-wrap"><canvas class="spark" id="spark-cpu-act"></canvas></div>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span class="detail-key">Nhân vật lý</span>
+          <span class="detail-val" id="d-cores">--</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-key">Luồng logic</span>
+          <span class="detail-val" id="d-threads">--</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-key">Xung nhịp hiện tại</span>
+          <span class="detail-val" id="d-clock">-- GHz</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-card">
+      <div class="section-label">RAM · Chi tiết</div>
+      <div class="spark-wrap"><canvas class="spark" id="spark-ram"></canvas></div>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span class="detail-key">Đã sử dụng</span>
+          <span class="detail-val" id="d-ram-used">-- GB</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-key">Còn trống</span>
+          <span class="detail-val" id="d-ram-free">-- GB</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-key">Tổng dung lượng</span>
+          <span class="detail-val" id="d-ram-total">-- GB</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Battery -->
+  <div class="battery-section" id="battery-section" style="display:none">
+    <div class="battery-card">
+      <div class="card-accent" style="background:linear-gradient(90deg,#22c55e,transparent)"></div>
+      <div class="card-tag">
+        <div class="chip" style="background:#22c55e"></div>
+        Battery
+      </div>
+      <div class="battery-top">
+        <div class="battery-icon-wrap">
+          <div class="battery-shell">
+            <div class="battery-fill" id="bat-fill"></div>
+          </div>
+        </div>
+        <div class="battery-pct-big" id="bat-pct" style="color:#22c55e">--%</div>
+        <div class="battery-meta">
+          <span class="battery-status" id="bat-status">—</span>
+          <span class="battery-time" id="bat-time"></span>
+        </div>
+      </div>
+
+      <div class="battery-grid">
+        <div class="bat-stat">
+          <div class="bat-stat-key">Sức khoẻ</div>
+          <div class="bat-stat-val" id="bat-health">--%</div>
+          <div class="health-bar-wrap"><div class="health-bar" id="bat-health-bar"></div></div>
+        </div>
+        <div class="bat-stat">
+          <div class="bat-stat-key">Dung lượng hiện tại</div>
+          <div class="bat-stat-val" id="bat-full-cap">-- Wh</div>
+        </div>
+        <div class="bat-stat">
+          <div class="bat-stat-key">Dung lượng gốc</div>
+          <div class="bat-stat-val" id="bat-design-cap">-- Wh</div>
+        </div>
+        <div class="bat-stat" id="bat-temp-block" style="display:none">
+          <div class="bat-stat-key">Nhiệt độ pin</div>
+          <div class="bat-stat-val" id="bat-temp">-- °C</div>
+        </div>
+        <div class="bat-stat" id="bat-watts-block" style="display:none">
+          <div class="bat-stat-key">Công suất</div>
+          <div class="bat-stat-val" id="bat-watts">-- W</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = 'http://localhost:5000/api/stats';
+const SPARK_LEN = 50;
+const sparks = {};
+
+function initSpark(id, color) {
+  sparks[id] = { data: [], color };
+}
+initSpark('cpu-temp', '#3b82f6');
+initSpark('gpu-temp', '#f59e0b');
+initSpark('cpu-act',  '#3b82f6');
+initSpark('ram',      '#a78bfa');
+
+function pushSpark(id, val) {
+  const s = sparks[id];
+  s.data.push(val);
+  if (s.data.length > SPARK_LEN) s.data.shift();
+}
+
+function drawSpark(id, canvasId) {
+  const s = sparks[id];
+  const c = document.getElementById(canvasId);
+  if (!c || s.data.length < 2) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.offsetWidth, H = c.offsetHeight;
+  c.width  = W * dpr;
+  c.height = H * dpr;
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const d = s.data;
+  const mn = Math.min(...d), mx = Math.max(...d);
+  const range = mx - mn || 1;
+  const step = W / (SPARK_LEN - 1);
+
+  // area fill
+  ctx.beginPath();
+  d.forEach((v, i) => {
+    const x = i * step;
+    const y = H - ((v - mn) / range) * (H - 6) - 3;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo((d.length - 1) * step, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, s.color + '30');
+  grad.addColorStop(1, s.color + '00');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // line
+  ctx.beginPath();
+  d.forEach((v, i) => {
+    const x = i * step;
+    const y = H - ((v - mn) / range) * (H - 6) - 3;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = s.color;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // dot
+  const last = d[d.length - 1];
+  const lx = (d.length - 1) * step;
+  const ly = H - ((last - mn) / range) * (H - 6) - 3;
+  ctx.beginPath();
+  ctx.arc(lx, ly, 3, 0, Math.PI * 2);
+  ctx.fillStyle = s.color;
+  ctx.fill();
+}
+
+// temperature → color
+function tempColor(t) {
+  if (t === null) return null;
+  if (t < 60) return '#3b82f6';
+  if (t < 75) return '#f59e0b';
+  if (t < 85) return '#f97316';
+  return '#ef4444';
+}
+function tempBadge(t) {
+  if (t === null) return ['—', 'badge'];
+  if (t < 60) return ['COOL',  'badge badge-cool'];
+  if (t < 75) return ['WARM',  'badge badge-warm'];
+  if (t < 85) return ['HOT',   'badge badge-hot'];
+  return            ['CRIT',   'badge badge-hot'];
+}
+
+let cpuMin = 999, cpuMax = 0, gpuMin = 999, gpuMax = 0;
+let _ramTempMin = 999, _ramTempMax = 0;
+const _driveMin = {}, _driveMax = {};
+let connected = false;
+let failCount = 0;
+
+function formatSpeed(v) {
+  if (v == null) return '0';
+  if (v >= 1000) return (v/1000).toFixed(2) + ' GB/s';
+  if (v >= 1)    return v.toFixed(1);
+  if (v >= 0.1)  return v.toFixed(2);
+  return v.toFixed(3);
+}
+function setEl(id, val)    { const e = document.getElementById(id); if (e) e.textContent = val; }
+function setStyle(id, prop, val) { const e = document.getElementById(id); if (e) e.style[prop] = val; }
+
+function apply(data) {
+  const cpu = data.cpu, gpu = data.gpu, ram = data.ram, ssd = data.ssd;
+
+  // — CPU temp —
+  const ct = cpu.temp;
+  const ctc = tempColor(ct) || '#3b82f6';
+  setEl('cpu-temp', ct !== null ? Math.round(ct) : '--');
+  setStyle('cpu-temp', 'color', ctc);
+  setStyle('cpu-temp-bar', 'width', ct !== null ? Math.min(100, ct) + '%' : '0%');
+  setStyle('cpu-temp-bar', 'background', ctc);
+  if (ct !== null) {
+    if (ct < cpuMin) cpuMin = Math.round(ct);
+    if (ct > cpuMax) cpuMax = Math.round(ct);
+    setEl('cpu-minmax', `Min ${cpuMin}° · Max ${cpuMax}°`);
+    pushSpark('cpu-temp', ct);
+  }
+  const [cLabel, cClass] = tempBadge(ct);
+  const cb = document.getElementById('cpu-badge');
+  if (cb) { cb.textContent = cLabel; cb.className = cClass; }
+
+  // — GPU temp —
+  const gt = gpu.temp;
+  const gtc = tempColor(gt) || '#f59e0b';
+  const noGpu = gt === null && gpu.usage === null;
+  document.getElementById('gpu-notice').style.display = noGpu ? 'block' : 'none';
+  setEl('gpu-temp', gt !== null ? Math.round(gt) : '--');
+  setStyle('gpu-temp', 'color', gtc);
+  setStyle('gpu-temp-bar', 'width', gt !== null ? Math.min(100, gt) + '%' : '0%');
+  setStyle('gpu-temp-bar', 'background', gtc);
+  if (gt !== null) {
+    if (gt < gpuMin) gpuMin = Math.round(gt);
+    if (gt > gpuMax) gpuMax = Math.round(gt);
+    setEl('gpu-minmax', `Min ${gpuMin}° · Max ${gpuMax}°`);
+    pushSpark('gpu-temp', gt);
+  }
+  const [gLabel, gClass] = tempBadge(gt);
+  const gb = document.getElementById('gpu-badge');
+  if (gb) { gb.textContent = gLabel; gb.className = gClass; }
+
+  // — activity bars —
+  const cu = cpu.usage;
+  setStyle('bar-cpu', 'width', cu + '%');
+  setEl('pct-cpu', cu + '%');
+  setEl('detail-cpu-freq', cpu.freq ? cpu.freq.toFixed(2) + ' GHz' : '--');
+
+  const gu = gpu.usage;
+  setStyle('bar-gpu', 'width', gu !== null ? gu + '%' : '0%');
+  setEl('pct-gpu', gu !== null ? gu + '%' : 'N/A');
+  setEl('detail-gpu', gu !== null ? 'VRAM active' : 'Not detected');
+
+  const ru = ram.usage;
+  setStyle('bar-ram', 'width', ru + '%');
+  setEl('pct-ram', ru + '%');
+  setEl('detail-ram', `${ram.used_gb} / ${ram.total_gb} GB`);
+
+  const su = ssd.activity;
+  setStyle('bar-ssd', 'width', su + '%');
+  setEl('pct-ssd', su + '%');
+
+  // — detail panel —
+  setEl('d-cores',   cpu.cores   || '--');
+  setEl('d-threads', cpu.threads || '--');
+  setEl('d-clock',   cpu.freq ? cpu.freq.toFixed(2) + ' GHz' : '--');
+  setEl('d-ram-used',  ram.used_gb  + ' GB');
+  setEl('d-ram-free',  (ram.total_gb - ram.used_gb).toFixed(2) + ' GB');
+  setEl('d-ram-total', ram.total_gb + ' GB');
+
+  pushSpark('cpu-act', cu);
+  pushSpark('ram', ru);
+
+  drawSpark('cpu-temp', 'spark-cpu-temp');
+  drawSpark('gpu-temp', 'spark-gpu-temp');
+  drawSpark('cpu-act',  'spark-cpu-act');
+  drawSpark('ram',      'spark-ram');
+
+  // — Disk R/W speed —
+  const ssd = data.ssd || {};
+  setEl('disk-read',  formatSpeed(ssd.read_mbps));
+  setEl('disk-write', formatSpeed(ssd.write_mbps));
+
+  // — Network speed —
+  const net = data.network || {};
+  setEl('net-down',  formatSpeed(net.down_mbps));
+  setEl('net-up',    formatSpeed(net.up_mbps));
+  setEl('net-iface', net.iface || '—');
+
+  // — RAM temperature —
+  const ramTemp = data.ram && data.ram.temp != null ? data.ram.temp : null;
+  const ramTempCard = document.getElementById('ram-temp-card');
+  if (ramTemp !== null) {
+    ramTempCard.style.display = 'block';
+    const rtc = tempColor(ramTemp);
+    setEl('ram-temp-val', Math.round(ramTemp));
+    setStyle('ram-temp-val', 'color', rtc);
+    setStyle('ram-temp-bar', 'width', Math.min(100, ramTemp) + '%');
+    setStyle('ram-temp-bar', 'background', rtc);
+    if (ramTemp < _ramTempMin) _ramTempMin = Math.round(ramTemp);
+    if (ramTemp > _ramTempMax) _ramTempMax = Math.round(ramTemp);
+    setEl('ram-temp-minmax', `Min ${_ramTempMin}° · Max ${_ramTempMax}°`);
+    const [rl, rc] = tempBadge(ramTemp);
+    const rb2 = document.getElementById('ram-temp-badge');
+    if (rb2) { rb2.textContent = rl; rb2.className = rc; }
+  } else {
+    ramTempCard.style.display = 'none';
+  }
+
+  // — Battery —
+  const bat = data.battery;
+  const batSection = document.getElementById('battery-section');
+  if (bat) {
+    batSection.style.display = 'block';
+    const pct = bat.percent;
+    const batColor = pct > 50 ? '#22c55e' : pct > 20 ? '#f59e0b' : '#ef4444';
+    setEl('bat-pct', pct + '%');
+    setStyle('bat-pct', 'color', batColor);
+    setStyle('bat-fill', 'width', pct + '%');
+    setStyle('bat-fill', 'background', batColor);
+
+    const statusEl = document.getElementById('bat-status');
+    if (bat.status === 'charging') {
+      statusEl.textContent = '⚡ Đang sạc'; statusEl.className = 'battery-status status-charging';
+    } else if (bat.status === 'full') {
+      statusEl.textContent = '✓ Đầy'; statusEl.className = 'battery-status status-full';
+    } else {
+      statusEl.textContent = '▼ Đang xả'; statusEl.className = 'battery-status status-discharging';
+    }
+
+    setEl('bat-time', bat.time_left ? bat.time_left + ' còn lại' : '');
+
+    if (bat.health !== null) {
+      const hc = bat.health > 80 ? '#22c55e' : bat.health > 60 ? '#f59e0b' : '#ef4444';
+      setEl('bat-health', bat.health + '%');
+      setStyle('bat-health-bar', 'width', bat.health + '%');
+      setStyle('bat-health-bar', 'background', hc);
+    }
+    if (bat.full_cap_mwh) setEl('bat-full-cap', (bat.full_cap_mwh/1000).toFixed(1) + ' Wh');
+    if (bat.design_cap_mwh) setEl('bat-design-cap', (bat.design_cap_mwh/1000).toFixed(1) + ' Wh');
+
+    const batTempBlock = document.getElementById('bat-temp-block');
+    if (bat.temp !== null) {
+      batTempBlock.style.display = 'flex';
+      setEl('bat-temp', bat.temp + ' °C');
+    }
+    const batWattsBlock = document.getElementById('bat-watts-block');
+    if (bat.watts !== null) {
+      batWattsBlock.style.display = 'flex';
+      setEl('bat-watts', bat.watts + ' W');
+    }
+  } else {
+    batSection.style.display = 'none';
+  }
+
+  // — Storage / Drive temperatures —
+  const drives = (data.ssd && data.ssd.drives) ? data.ssd.drives : [];
+  const driveRow = document.getElementById('drive-temp-row');
+  if (drives.length > 0) {
+    driveRow.style.display = 'grid';
+    // sync cards: tạo mới nếu chưa có, update nếu có
+    drives.forEach((d, i) => {
+      let card = document.getElementById(`drive-card-${i}`);
+      if (!card) {
+        card = document.createElement('div');
+        card.id = `drive-card-${i}`;
+        card.className = 'drive-card';
+        card.innerHTML = `
+          <div class="card-accent" style="background:linear-gradient(90deg,var(--green),transparent)"></div>
+          <div class="drive-name" id="drive-name-${i}"></div>
+          <div>
+            <span class="drive-temp" id="drive-temp-${i}">--</span><span class="drive-temp-unit">°C</span>
+          </div>
+          <div class="drive-bar-wrap"><div class="drive-bar" id="drive-bar-${i}"></div></div>
+          <div class="temp-footer">
+            <span class="temp-minmax" id="drive-mm-${i}">—</span>
+            <span class="badge" id="drive-badge-${i}">—</span>
+          </div>`;
+        driveRow.appendChild(card);
+        _driveMin[i] = 999; _driveMax[i] = 0;
+      }
+      const dt2 = d.temp, dc = tempColor(dt2) || 'var(--green)';
+      setEl(`drive-name-${i}`, d.name);
+      setEl(`drive-temp-${i}`, Math.round(dt2));
+      setStyle(`drive-temp-${i}`, 'color', dc);
+      setStyle(`drive-bar-${i}`, 'width', Math.min(100, dt2) + '%');
+      setStyle(`drive-bar-${i}`, 'background', dc);
+      if (dt2 < _driveMin[i]) _driveMin[i] = Math.round(dt2);
+      if (dt2 > _driveMax[i]) _driveMax[i] = Math.round(dt2);
+      setEl(`drive-mm-${i}`, `Min ${_driveMin[i]}° · Max ${_driveMax[i]}°`);
+      const [dl, dc2] = tempBadge(dt2);
+      const db = document.getElementById(`drive-badge-${i}`);
+      if (db) { db.textContent = dl; db.className = dc2; }
+    });
+  } else {
+    driveRow.style.display = 'none';
+  }
+}
+
+async function fetchStats() {
+  const controller = new AbortController();
+  // Timeout 3s — nếu server không trả lời thì bỏ qua, thử lại lần sau
+  const timer = setTimeout(() => controller.abort(), 3000);
+  try {
+    const res = await fetch(API, { cache: 'no-store', signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    apply(data);
+    failCount = 0;
+
+    if (!connected) {
+      connected = true;
+      document.getElementById('overlay').classList.add('hidden');
+      const b = document.getElementById('conn-badge');
+      b.textContent = 'LIVE';
+      b.className = 'conn-status conn-ok';
+    }
+  } catch (e) {
+    clearTimeout(timer);
+    // Bỏ qua lỗi abort (timeout) — chỉ đếm lỗi thực sự
+    if (e.name === 'AbortError') return;
+    failCount++;
+    // Cần 5 lần fail liên tiếp mới hiện overlay (tránh nhạy quá)
+    if (failCount >= 5) {
+      connected = false;
+      document.getElementById('overlay').classList.remove('hidden');
+      const b = document.getElementById('conn-badge');
+      b.textContent = 'OFFLINE';
+      b.className = 'conn-status conn-err';
+      document.getElementById('overlay-hint').innerHTML =
+        `Server chưa chạy hoặc bị lỗi.<br>Chạy lại: <code style="color:var(--blue)">python server.py</code>`;
+    }
+  }
+}
+
+// Clock
+function tick() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('vi-VN', { hour12: false });
+}
+
+// Redraw sparks on resize
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    drawSpark('cpu-temp', 'spark-cpu-temp');
+    drawSpark('gpu-temp', 'spark-gpu-temp');
+    drawSpark('cpu-act',  'spark-cpu-act');
+    drawSpark('ram',      'spark-ram');
+  }, 200);
+});
+
+tick();
+setInterval(tick, 1000);
+fetchStats();
+setInterval(fetchStats, 1500);
+</script>
+</body>
+</html>
