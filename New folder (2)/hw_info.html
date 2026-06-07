@@ -131,19 +131,6 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);
 </head>
 <body>
 <div class="shell">
-  <div style="margin-bottom:1rem;display:flex;gap:10px">
-    <a href="/" style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
-       padding:7px 16px;border-radius:8px;border:1px solid var(--border2);
-       background:var(--bg2);color:var(--text2);text-decoration:none">
-      🌡 Nhiệt độ
-    </a>
-    <a href="/hardware" style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
-       padding:7px 16px;border-radius:8px;border:1px solid var(--blue);
-       background:rgba(79,142,247,.12);color:var(--blue);text-decoration:none">
-      🖥 Phần cứng
-    </a>
-  </div>
-
 
   <div class="page-header">
     <div class="page-icon">🖥</div>
@@ -158,7 +145,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);
 
 </div>
 <script>
-const API = 'http://localhost:5000/api/hw';
+const API = 'http://localhost:5100/api/hw';
 
 /* ── helpers ── */
 const v  = (x, fb='N/A') => (x==null||x===''||x==='N/A') ? fb : x;
@@ -310,13 +297,10 @@ function renderRAM(ram) {
 }
 
 function renderStorage(storage) {
-  if (!storage) return '';
-  const hasDrives = storage.drives?.length > 0;
+  if (!storage?.drives?.length) return '';
   const usage = storage.usage || {};
-  const hasUsage = Object.keys(usage).length > 0;
-  if (!hasDrives && !hasUsage) return '';
 
-  const driveCards = (storage.drives || []).map(d => {
+  const driveCards = storage.drives.map(d => {
     const smart = (d.hours!=null||d.cycles!=null) ? `
       <div class="big-stats" style="margin-top:6px">
         ${d.hours!=null ? bigStat('Giờ bật',d.hours.toLocaleString('vi-VN'),'giờ','var(--amber)') : ''}
@@ -375,8 +359,8 @@ function renderStorage(storage) {
     </div>
   </div>` : '';
 
-  return section('💿','Ổ cứng / SSD', (storage.drives||[]).length,
-    `${hasDrives ? `<div class="cards cards-2">${driveCards}</div>` : ''}${partCard}`);
+  return section('💿','Ổ cứng / SSD', storage.drives.length,
+    `<div class="cards cards-2">${driveCards}</div>${partCard}`);
 }
 
 function renderNetwork(nics) {

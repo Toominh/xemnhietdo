@@ -310,10 +310,13 @@ function renderRAM(ram) {
 }
 
 function renderStorage(storage) {
-  if (!storage?.drives?.length) return '';
+  if (!storage) return '';
+  const hasDrives = storage.drives?.length > 0;
   const usage = storage.usage || {};
+  const hasUsage = Object.keys(usage).length > 0;
+  if (!hasDrives && !hasUsage) return '';
 
-  const driveCards = storage.drives.map(d => {
+  const driveCards = (storage.drives || []).map(d => {
     const smart = (d.hours!=null||d.cycles!=null) ? `
       <div class="big-stats" style="margin-top:6px">
         ${d.hours!=null ? bigStat('Giờ bật',d.hours.toLocaleString('vi-VN'),'giờ','var(--amber)') : ''}
@@ -372,8 +375,8 @@ function renderStorage(storage) {
     </div>
   </div>` : '';
 
-  return section('💿','Ổ cứng / SSD', storage.drives.length,
-    `<div class="cards cards-2">${driveCards}</div>${partCard}`);
+  return section('💿','Ổ cứng / SSD', (storage.drives||[]).length,
+    `${hasDrives ? `<div class="cards cards-2">${driveCards}</div>` : ''}${partCard}`);
 }
 
 function renderNetwork(nics) {

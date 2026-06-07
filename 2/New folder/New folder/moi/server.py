@@ -331,11 +331,15 @@ _bat_health_ts=0
 
 def get_battery_health():
     try:
-        import wmi as _wmi
-        w=_wmi.WMI(namespace="root\\wmi")
-        full=w.BatteryFullChargedCapacity()[0].FullChargedCapacity
-        design=w.BatteryStaticData()[0].DesignedCapacity
-        if design>0: return round(full/design*100,1),full,design
+        import pythoncom, wmi as _wmi
+        pythoncom.CoInitialize()
+        try:
+            w=_wmi.WMI(namespace="root\\wmi")
+            full=w.BatteryFullChargedCapacity()[0].FullChargedCapacity
+            design=w.BatteryStaticData()[0].DesignedCapacity
+            if design>0: return round(full/design*100,1),full,design
+        finally:
+            pythoncom.CoUninitialize()
     except: pass
     return None,None,None
 
@@ -428,11 +432,15 @@ def gb(v):
 def wmi_query(cls, ns="root\\cimv2", fields=None):
     if not IS_WIN: return []
     try:
-        import wmi as _wmi
-        w=_wmi.WMI(namespace=ns)
-        rows=getattr(w,cls)()
-        if not fields: return rows
-        return [{f:getattr(r,f,None) for f in fields} for r in rows]
+        import pythoncom, wmi as _wmi
+        pythoncom.CoInitialize()
+        try:
+            w=_wmi.WMI(namespace=ns)
+            rows=getattr(w,cls)()
+            if not fields: return rows
+            return [{f:getattr(r,f,None) for f in fields} for r in rows]
+        finally:
+            pythoncom.CoUninitialize()
     except: return []
 
 _hw_cache={}
