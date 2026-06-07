@@ -1,4 +1,4 @@
 @echo off
 
-python server.py
+python server(8).py
 pause

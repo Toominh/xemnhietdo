@@ -1,0 +1,3 @@
+Cai Python - Backend để lấy thông tin phần cứng
+Chạy openhardwaremonitor : Option -> remote server -> Run (Để xuất thông tin Json cho web đọc)
+Chạy file .bat

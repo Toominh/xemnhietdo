@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hardware Info</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@400;600;700;800&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:    #0a0c10;
+  --bg2:   #0f1218;
+  --bg3:   #141820;
+  --bg4:   #1a1f2a;
+  --bd:    #1d2535;
+  --bd2:   #28344d;
+  --bd3:   #3a4d6e;
+  --t1:    #eef2f8;
+  --t2:    #8fa3bf;
+  --t3:    #4a5d78;
+  --blue:  #4d8ef5;
+  --cyan:  #22d3ee;
+  --green: #34d399;
+  --amber: #fbbf24;
+  --red:   #f87171;
+  --purple:#a78bfa;
+  --pink:  #f472b6;
+  --mono:  'JetBrains Mono',monospace;
+  --sans:  'Syne',sans-serif;
+}
+body{background:var(--bg);color:var(--t1);font-family:var(--sans);font-size:15px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+
+/* ── Layout ── */
+.app{display:flex;flex-direction:column;min-height:100vh}
+.topbar{
+  background:var(--bg2);border-bottom:1px solid var(--bd);
+  padding:0 24px;height:56px;display:flex;align-items:center;gap:16px;
+  position:sticky;top:0;z-index:100;
+}
+.topbar-logo{font-size:20px;font-weight:800;letter-spacing:-0.5px;color:var(--t1)}
+.topbar-logo span{color:var(--blue)}
+.topbar-sub{font-size:11px;color:var(--t3);font-family:var(--mono)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.live{display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);color:var(--green)}
+.live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+.btn{background:var(--bg3);border:1px solid var(--bd2);color:var(--t2);font-family:var(--sans);font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:5px}
+.btn:hover{border-color:var(--blue);color:var(--blue)}
+.btn.spin svg{animation:spin .5s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Main ── */
+.main{display:flex;flex:1}
+/* Sidebar tabs */
+.sidebar{
+  width:180px;min-width:180px;background:var(--bg2);border-right:1px solid var(--bd);
+  padding:12px 8px;display:flex;flex-direction:column;gap:2px;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;
+}
+.tab{
+  display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;
+  cursor:pointer;font-size:13px;font-weight:600;color:var(--t3);transition:all .15s;border:1px solid transparent;
+}
+.tab:hover{color:var(--t2);background:var(--bg3)}
+.tab.active{color:var(--t1);background:var(--bg4);border-color:var(--bd2)}
+.tab-icon{font-size:16px;width:20px;text-align:center}
+.tab-divider{height:1px;background:var(--bd);margin:6px 4px}
+
+/* Content */
+.content{flex:1;padding:24px;overflow-y:auto;max-width:1100px}
+.section{display:none}
+.section.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ── Cards & panels ── */
+.panel{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.panel-header{padding:12px 18px;background:var(--bg3);border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px}
+.panel-title{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3)}
+.panel-icon{font-size:17px}
+.panel-badge{margin-left:auto;font-size:11px;font-family:var(--mono);font-weight:700;padding:2px 8px;border-radius:5px}
+.panel-body{padding:4px 0}
+
+/* ── Table rows ── */
+.r{display:grid;grid-template-columns:200px 1fr;align-items:center;padding:7px 18px;border-bottom:1px solid var(--bd);}
+.r:last-child{border-bottom:none}
+.r:hover{background:var(--bg3)}
+.rl{font-size:13px;color:var(--t3)}
+.rv{font-size:13px;font-family:var(--mono);font-weight:600;color:var(--t1);word-break:break-all}
+
+/* Wide row (full span) */
+.rw{padding:7px 18px;border-bottom:1px solid var(--bd)}
+.rw:last-child{border-bottom:none}
+
+/* ── Progress ── */
+.bar-row{padding:10px 18px;border-bottom:1px solid var(--bd)}
+.bar-row:last-child{border-bottom:none}
+.bar-info{display:flex;justify-content:space-between;font-size:12px;color:var(--t3);font-family:var(--mono);margin-bottom:5px}
+.bar-track{height:6px;background:var(--bg4);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.bar-blue{background:linear-gradient(90deg,#1d4ed8,#4d8ef5)}
+.bar-green{background:linear-gradient(90deg,#15803d,#34d399)}
+.bar-amber{background:linear-gradient(90deg,#b45309,#fbbf24)}
+.bar-red{background:linear-gradient(90deg,#b91c1c,#f87171)}
+.bar-purple{background:linear-gradient(90deg,#6d28d9,#a78bfa)}
+.bar-cyan{background:linear-gradient(90deg,#0e7490,#22d3ee)}
+
+/* ── Badge ── */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:5px;font-size:11px;font-family:var(--mono);font-weight:700}
+.bg{background:#052e16;color:#34d399;border:1px solid #16653433}
+.bb{background:#0c1a3a;color:#4d8ef5;border:1px solid #1e40af33}
+.ba{background:#271a00;color:#fbbf24;border:1px solid #92400e33}
+.br{background:#2a0808;color:#f87171;border:1px solid #991b1b33}
+.bp{background:#1a0a2e;color:#a78bfa;border:1px solid #6d28d933}
+.bc{background:#081e26;color:#22d3ee;border:1px solid #0e749033}
+
+/* ── Core grid ── */
+.core-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;padding:14px 18px}
+.core-item{background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px}
+.core-name{font-size:10px;color:var(--t3);font-family:var(--mono);margin-bottom:4px}
+.core-freq{font-size:13px;font-weight:700;color:var(--t1);font-family:var(--mono)}
+.core-pct{font-size:11px;color:var(--t2);font-family:var(--mono);margin-bottom:5px}
+.core-mini-bar{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.core-mini-fill{height:100%;border-radius:2px;background:var(--blue);transition:width .6s}
+
+/* ── Memory sticks ── */
+.stick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:14px 18px}
+.stick{background:var(--bg3);border:1px solid var(--bd2);border-radius:9px;padding:12px 14px}
+.stick-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.stick-chip{background:var(--bg4);border:1px solid var(--bd3);border-radius:6px;padding:4px 10px;font-size:11px;font-family:var(--mono);font-weight:700;color:var(--cyan)}
+.stick-slot{font-size:12px;color:var(--t3);font-family:var(--mono)}
+
+/* ── Disk ── */
+.disk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;padding:14px 18px}
+.disk-item{background:var(--bg3);border:1px solid var(--bd);border-radius:9px;padding:14px 16px}
+.disk-name{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+
+/* ── Temp ── */
+.temp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;padding:14px 18px}
+.temp-item{background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;text-align:center}
+.temp-val{font-size:26px;font-weight:800;font-family:var(--mono);margin-bottom:2px}
+.temp-label{font-size:11px;color:var(--t3);font-family:var(--mono)}
+.temp-hot{color:var(--red)}
+.temp-warm{color:var(--amber)}
+.temp-cool{color:var(--green)}
+.temp-norm{color:var(--cyan)}
+
+/* ── Process table ── */
+.proc-table{width:100%;border-collapse:collapse}
+.proc-table th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--t3);padding:8px 18px;border-bottom:1px solid var(--bd);background:var(--bg3)}
+.proc-table td{font-size:12px;padding:7px 18px;border-bottom:1px solid var(--bd);font-family:var(--mono);color:var(--t1)}
+.proc-table tr:hover td{background:var(--bg3)}
+
+/* ── Flags ── */
+.flag-wrap{display:flex;flex-wrap:wrap;gap:5px;padding:12px 18px}
+.flag{background:var(--bg3);border:1px solid var(--bd);border-radius:5px;padding:2px 7px;font-size:11px;font-family:var(--mono);color:var(--t3)}
+
+/* ── Section header ── */
+.sec-title{font-size:18px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px;color:var(--t1)}
+.sec-icon{font-size:22px}
+
+/* ── Footer ── */
+.footer{border-top:1px solid var(--bd);padding:10px 24px;display:flex;justify-content:space-between;align-items:center;background:var(--bg2)}
+.footer-t{font-size:11px;color:var(--t3);font-family:var(--mono)}
+
+/* ── Loading overlay ── */
+#loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999;transition:opacity .4s}
+#loading.hide{opacity:0;pointer-events:none}
+.load-icon{font-size:48px;animation:bounce 1s ease infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.load-text{font-size:16px;font-weight:700;color:var(--t2)}
+.load-sub{font-size:12px;color:var(--t3);font-family:var(--mono)}
+
+/* ── No data ── */
+.nodata{padding:28px;text-align:center;color:var(--t3);font-size:13px;font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="load-icon">💻</div>
+  <div class="load-text">Đang đọc phần cứng...</div>
+  <div class="load-sub" id="loadSub">Khởi động server</div>
+</div>
+
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="topbar-logo">Hardware<span>Info</span></div>
+      <div class="topbar-sub" id="topSub">Đang quét...</div>
+    </div>
+    <div class="topbar-right">
+      <div class="live"><span class="live-dot"></span>LIVE</div>
+      <button class="btn" id="refreshBtn" onclick="loadData()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M4 4v5h5M20 20v-5h-5"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64M3.51 15a9 9 0 0 0 14.85 3.36"/></svg>
+        Làm mới
+      </button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="sidebar">
+      <div class="tab active" onclick="showTab('cpu')" id="t-cpu"><span class="tab-icon">🔲</span>CPU</div>
+      <div class="tab" onclick="showTab('ram')" id="t-ram"><span class="tab-icon">🧠</span>RAM</div>
+      <div class="tab" onclick="showTab('gpu')" id="t-gpu"><span class="tab-icon">🎮</span>GPU</div>
+      <div class="tab" onclick="showTab('board')" id="t-board"><span class="tab-icon">🔌</span>Bo mạch</div>
+      <div class="tab" onclick="showTab('disk')" id="t-disk"><span class="tab-icon">💾</span>Ổ đĩa</div>
+      <div class="tab-divider"></div>
+      <div class="tab" onclick="showTab('os')" id="t-os"><span class="tab-icon">🪟</span>Hệ điều hành</div>
+      <div class="tab" onclick="showTab('network')" id="t-network"><span class="tab-icon">🌐</span>Mạng</div>
+      <div class="tab" onclick="showTab('temp')" id="t-temp"><span class="tab-icon">🌡</span>Nhiệt độ</div>
+      <div class="tab" onclick="showTab('battery')" id="t-battery"><span class="tab-icon">🔋</span>Pin</div>
+      <div class="tab-divider"></div>
+      <div class="tab" onclick="showTab('process')" id="t-process"><span class="tab-icon">📊</span>Tiến trình</div>
+    </div>
+
+    <div class="content">
+      <!-- CPU -->
+      <div class="section active" id="s-cpu">
+        <div class="sec-title"><span class="sec-icon">🔲</span>Bộ xử lý (CPU)</div>
+        <div id="cpu-content"></div>
+      </div>
+      <!-- RAM -->
+      <div class="section" id="s-ram">
+        <div class="sec-title"><span class="sec-icon">🧠</span>Bộ nhớ RAM</div>
+        <div id="ram-content"></div>
+      </div>
+      <!-- GPU -->
+      <div class="section" id="s-gpu">
+        <div class="sec-title"><span class="sec-icon">🎮</span>Card đồ họa (GPU)</div>
+        <div id="gpu-content"></div>
+      </div>
+      <!-- Board -->
+      <div class="section" id="s-board">
+        <div class="sec-title"><span class="sec-icon">🔌</span>Bo mạch chủ &amp; BIOS</div>
+        <div id="board-content"></div>
+      </div>
+      <!-- Disk -->
+      <div class="section" id="s-disk">
+        <div class="sec-title"><span class="sec-icon">💾</span>Ổ đĩa</div>
+        <div id="disk-content"></div>
+      </div>
+      <!-- OS -->
+      <div class="section" id="s-os">
+        <div class="sec-title"><span class="sec-icon">🪟</span>Hệ điều hành</div>
+        <div id="os-content"></div>
+      </div>
+      <!-- Network -->
+      <div class="section" id="s-network">
+        <div class="sec-title"><span class="sec-icon">🌐</span>Kết nối mạng</div>
+        <div id="network-content"></div>
+      </div>
+      <!-- Temp -->
+      <div class="section" id="s-temp">
+        <div class="sec-title"><span class="sec-icon">🌡</span>Nhiệt độ cảm biến</div>
+        <div id="temp-content"></div>
+      </div>
+      <!-- Battery -->
+      <div class="section" id="s-battery">
+        <div class="sec-title"><span class="sec-icon">🔋</span>Pin</div>
+        <div id="battery-content"></div>
+      </div>
+      <!-- Process -->
+      <div class="section" id="s-process">
+        <div class="sec-title"><span class="sec-icon">📊</span>Tiến trình (Top 20 CPU)</div>
+        <div id="process-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span class="footer-t" id="scanInfo">—</span>
+    <span class="footer-t">Hardware Info · localhost:7070</span>
+  </div>
+</div>
+
+<script>
+// ── Tab navigation ──────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('t-' + name).classList.add('active');
+  document.getElementById('s-' + name).classList.add('active');
+}
+
+// ── Helpers ─────────────────────────────────────────────────
+function row(label, val, color='') {
+  return `<div class="r"><span class="rl">${label}</span><span class="rv" style="color:${color||'var(--t1)'}">${val}</span></div>`;
+}
+function panel(icon, title, body, badge='', badgeCls='') {
+  const bdg = badge ? `<span class="panel-badge ${badgeCls}">${badge}</span>` : '';
+  return `<div class="panel"><div class="panel-header"><span class="panel-icon">${icon}</span><span class="panel-title">${title}</span>${bdg}</div><div class="panel-body">${body}</div></div>`;
+}
+function barRow(label, pct, cls, extra='') {
+  const p = Math.min(100, Math.max(0, Math.round(parseFloat(pct) || 0)));
+  return `<div class="bar-row">
+    <div class="bar-info"><span>${label}</span><span>${p}% ${extra}</span></div>
+    <div class="bar-track"><div class="bar-fill bar-${cls}" style="width:0%" data-w="${p}%"></div></div>
+  </div>`;
+}
+function animBars() {
+  document.querySelectorAll('.bar-fill[data-w]').forEach(el => {
+    setTimeout(() => { el.style.width = el.dataset.w; el.removeAttribute('data-w'); }, 80);
+  });
+}
+function badge(txt, cls) { return `<span class="badge ${cls}">${txt}</span>`; }
+function tempColor(v) {
+  if (!v && v !== 0) return 'temp-norm';
+  if (v >= 90) return 'temp-hot';
+  if (v >= 70) return 'temp-warm';
+  if (v >= 50) return 'temp-norm';
+  return 'temp-cool';
+}
+
+// ── Render functions ────────────────────────────────────────
+function renderCPU(d) {
+  const c = d.cpu;
+  let html = '';
+
+  // Info
+  let infoRows = row('Tên CPU', c.name)
+    + row('Nhà sản xuất', c.vendor)
+    + row('Kiến trúc', c.arch + ' (' + c.bits + '-bit)')
+    + row('Family / Model / Stepping', `${c.family} / ${c.model_id} / ${c.stepping}`)
+    + row('Nhân vật lý', c.cores_physical)
+    + row('Luồng logic', c.cores_logical)
+    + row('Tần số cơ bản', c.hz_base)
+    + row('Tần số hiện tại', c.hz_current, 'var(--cyan)')
+    + row('Tần số tối đa', c.hz_max)
+    + row('Điện áp', c.voltage)
+    + row('TDP', c.tdp);
+  html += panel('🔲', 'Thông tin CPU', infoRows + barRow('Tải CPU', c.usage_total, 'blue'), c.usage_total, 'bb');
+
+  // Cache
+  let cacheRows = row('Cache L1 Data', c.cache_l1d)
+    + row('Cache L1 Instruction', c.cache_l1i)
+    + row('Cache L2', c.cache_l2)
+    + row('Cache L3', c.cache_l3);
+  html += panel('💾', 'Bộ nhớ cache', cacheRows);
+
+  // Cores
+  if (c.usage_per && c.usage_per.length) {
+    let cores = '<div class="core-grid">';
+    c.usage_per.forEach((pct, i) => {
+      const p = parseFloat(pct) || 0;
+      const f = c.freq_per[i] || '';
+      cores += `<div class="core-item">
+        <div class="core-name">Lõi ${i}</div>
+        <div class="core-freq">${f}</div>
+        <div class="core-pct">${pct}</div>
+        <div class="core-mini-bar"><div class="core-mini-fill" style="width:0%" data-w="${p}%"></div></div>
+      </div>`;
+    });
+    cores += '</div>';
+    html += panel('⚡', 'Từng lõi CPU', cores);
+  }
+
+  // Flags
+  if (c.flags && c.flags.length) {
+    const flags = '<div class="flag-wrap">' + c.flags.map(f => `<span class="flag">${f}</span>`).join('') + '</div>';
+    html += panel('🏷', 'Tập lệnh hỗ trợ (CPU Flags)', flags);
+  }
+
+  document.getElementById('cpu-content').innerHTML = html;
+  document.querySelectorAll('.core-mini-fill[data-w]').forEach(el => {
+    setTimeout(() => { el.style.width = el.dataset.w; el.removeAttribute('data-w'); }, 100);
+  });
+  animBars();
+}
+
+function renderRAM(d) {
+  const r = d.ram;
+  let html = '';
+
+  const used = parseFloat(r.percent) || 0;
+  const swapUsed = parseFloat(r.swap_pct) || 0;
+  let overview = row('Tổng RAM', r.total)
+    + row('Đã dùng', r.used, 'var(--amber)')
+    + row('Còn trống', r.available, 'var(--green)')
+    + barRow('RAM đã dùng', used, used > 85 ? 'red' : used > 60 ? 'amber' : 'green')
+    + row('Swap (Page File) tổng', r.swap_total)
+    + row('Swap đã dùng', r.swap_used)
+    + barRow('Swap đã dùng', swapUsed, swapUsed > 60 ? 'amber' : 'blue')
+    + row('Số thanh RAM', r.channels || 'N/A');
+  html += panel('🧠', 'Tổng quan bộ nhớ', overview, r.percent, 'ba');
+
+  if (r.sticks && r.sticks.length) {
+    let sticks = '<div class="stick-grid">';
+    r.sticks.forEach((s, i) => {
+      sticks += `<div class="stick">
+        <div class="stick-top">
+          <div class="stick-chip">${s.type} ${s.speed}</div>
+          <div class="stick-slot">${s.slot}</div>
+        </div>
+        ${row('Dung lượng', s.capacity)}
+        ${row('Nhà sản xuất', s.manufacturer)}
+        ${row('Part Number', s.part)}
+        ${row('Serial', s.serial)}
+        ${row('Điện áp', s.voltage)}
+        ${row('Form Factor', s.form)}
+      </div>`;
+    });
+    sticks += '</div>';
+    html += panel('📦', 'Chi tiết từng thanh RAM', sticks);
+  } else {
+    html += panel('📦', 'Chi tiết từng thanh RAM', '<div class="nodata">Cần quyền Administrator hoặc WMI không khả dụng</div>');
+  }
+
+  document.getElementById('ram-content').innerHTML = html;
+  animBars();
+}
+
+function renderGPU(d) {
+  let html = '';
+  if (!d.gpu || !d.gpu.length) {
+    html = panel('🎮', 'Card đồ họa', '<div class="nodata">Không đọc được thông tin GPU (cần WMI)</div>');
+  } else {
+    d.gpu.forEach((g, i) => {
+      let rows = row('Tên GPU', g.name)
+        + row('VRAM', g.vram, 'var(--cyan)')
+        + row('Driver', g.driver)
+        + row('Ngày driver', g.driver_date)
+        + row('Độ phân giải', g.resolution)
+        + row('Tần số làm tươi', g.refresh)
+        + row('Độ sâu màu', g.color_depth)
+        + row('Trạng thái', g.status);
+      html += panel('🎮', `GPU ${i + 1}: ${g.name}`, rows, g.vram, 'bp');
+    });
+  }
+  document.getElementById('gpu-content').innerHTML = html;
+}
+
+function renderBoard(d) {
+  const m = d.motherboard;
+  let html = '';
+  if (m.system && m.system.name) {
+    let sys = row('Tên máy', m.system.name)
+      + row('Nhà sản xuất', m.system.manufacturer)
+      + row('Model', m.system.model)
+      + row('Loại hệ thống', m.system.type)
+      + row('Tổng RAM', m.system.total_ram);
+    html += panel('🖥', 'Hệ thống', sys);
+  }
+  if (m.board && m.board.product) {
+    let brd = row('Nhà sản xuất', m.board.manufacturer)
+      + row('Model bo mạch', m.board.product, 'var(--cyan)')
+      + row('Phiên bản', m.board.version)
+      + row('Serial Number', m.board.serial);
+    html += panel('🔌', 'Bo mạch chủ (Motherboard)', brd);
+  }
+  if (m.bios && m.bios.version) {
+    let bios = row('Nhà sản xuất BIOS', m.bios.manufacturer)
+      + row('Phiên bản BIOS', m.bios.version, 'var(--amber)')
+      + row('Ngày phát hành', m.bios.date)
+      + row('Caption', m.bios.caption);
+    html += panel('📀', 'BIOS / UEFI', bios);
+  }
+  if (!html) html = panel('🔌', 'Bo mạch chủ', '<div class="nodata">Cần chạy với quyền Administrator</div>');
+  document.getElementById('board-content').innerHTML = html;
+}
+
+function renderDisk(d) {
+  let html = '';
+  if (!d.disks || !d.disks.length) {
+    html = panel('💾', 'Ổ đĩa', '<div class="nodata">Không tìm thấy ổ đĩa</div>');
+  } else {
+    d.disks.forEach(dk => {
+      const pct = parseFloat(dk.percent) || 0;
+      let rows = row('Thiết bị', dk.device)
+        + row('Mount point', dk.mountpoint)
+        + row('File system', dk.fstype)
+        + row('Model', dk.model, 'var(--cyan)')
+        + row('Giao tiếp', dk.interface)
+        + row('Serial', dk.serial)
+        + row('Tổng dung lượng', dk.total)
+        + row('Đã dùng', dk.used, 'var(--amber)')
+        + row('Còn trống', dk.free, 'var(--green)')
+        + barRow('Đã dùng', pct, pct > 90 ? 'red' : pct > 70 ? 'amber' : 'green')
+        + row('Tổng đọc', dk.read_bytes)
+        + row('Tổng ghi', dk.write_bytes);
+      html += panel('💾', dk.device + ' — ' + dk.model, rows, dk.percent, pct > 80 ? 'br' : 'bg');
+    });
+  }
+  document.getElementById('disk-content').innerHTML = html;
+  animBars();
+}
+
+function renderOS(d) {
+  const o = d.os;
+  let rows = row('Hệ điều hành', o.name + ' ' + o.release, 'var(--cyan)')
+    + row('Phiên bản chi tiết', o.version)
+    + row('Kiến trúc', o.machine)
+    + row('Hostname', o.node)
+    + row('Processor', o.processor)
+    + row('Python version', o.python)
+    + row('Thời gian khởi động', o.boot_time)
+    + row('Uptime', o.uptime, 'var(--green)')
+    + row('Người dùng đang hoạt động', (o.users || []).join(', ') || 'N/A');
+  document.getElementById('os-content').innerHTML = panel('🪟', 'Thông tin hệ điều hành', rows);
+}
+
+function renderNetwork(d) {
+  let html = '';
+  if (!d.network || !d.network.length) {
+    html = panel('🌐', 'Mạng', '<div class="nodata">Không tìm thấy adapter mạng</div>');
+  } else {
+    d.network.forEach(n => {
+      const upColor = n.up ? 'var(--green)' : 'var(--red)';
+      let rows = row('Trạng thái', n.up ? '● Online' : '● Offline', upColor)
+        + row('Tốc độ', n.speed)
+        + row('Duplex', n.duplex)
+        + row('MTU', n.mtu)
+        + row('IPv4', n.ipv4, 'var(--cyan)')
+        + row('IPv6', n.ipv6)
+        + row('MAC Address', n.mac, 'var(--amber)')
+        + row('Đã gửi', n.sent)
+        + row('Đã nhận', n.recv);
+      html += panel('🌐', n.name, rows, n.up ? 'Online' : 'Offline', n.up ? 'bg' : 'br');
+    });
+  }
+  document.getElementById('network-content').innerHTML = html;
+}
+
+function renderTemp(d) {
+  let html = '';
+  if (!d.temps || !Object.keys(d.temps).length) {
+    html = panel('🌡', 'Nhiệt độ', `<div class="nodata">
+      Không đọc được nhiệt độ.<br><br>
+      Để hiển thị nhiệt độ CPU/GPU, hãy cài <b>OpenHardwareMonitor</b> và chạy nó trước khi khởi động server.<br>
+      Tải tại: <a href="https://openhardwaremonitor.org" style="color:var(--blue)">openhardwaremonitor.org</a>
+    </div>`);
+  } else {
+    for (const [cat, sensors] of Object.entries(d.temps)) {
+      let grid = '<div class="temp-grid">';
+      sensors.forEach(s => {
+        const cls = tempColor(s.current);
+        grid += `<div class="temp-item">
+          <div class="temp-val ${cls}">${s.current !== null ? s.current.toFixed(1) + '°C' : 'N/A'}</div>
+          <div class="temp-label">${s.label}</div>
+          ${s.high ? `<div class="temp-label">Max: ${s.high}°C</div>` : ''}
+        </div>`;
+      });
+      grid += '</div>';
+      html += panel('🌡', cat, grid);
+    }
+  }
+  document.getElementById('temp-content').innerHTML = html;
+}
+
+function renderBattery(d) {
+  let html = '';
+  if (!d.battery) {
+    html = panel('🔋', 'Pin', '<div class="nodata">Không phát hiện pin — thiết bị để bàn hoặc không hỗ trợ</div>');
+  } else {
+    const b = d.battery;
+    const pct = b.percent;
+    const barCls = pct > 60 ? 'green' : pct > 25 ? 'amber' : 'red';
+    let rows = row('Mức pin', pct + '%', pct > 60 ? 'var(--green)' : pct > 25 ? 'var(--amber)' : 'var(--red)')
+      + row('Trạng thái', b.charging ? '⚡ Đang sạc' : '🔋 Đang dùng pin', b.charging ? 'var(--cyan)' : 'var(--amber)')
+      + row('Thời gian còn lại', b.time_left)
+      + barRow('Mức pin', pct, barCls);
+    html = panel('🔋', 'Pin', rows, pct + '%', barCls === 'green' ? 'bg' : barCls === 'amber' ? 'ba' : 'br');
+  }
+  document.getElementById('battery-content').innerHTML = html;
+  animBars();
+}
+
+function renderProcess(d) {
+  if (!d.processes || !d.processes.length) {
+    document.getElementById('process-content').innerHTML = panel('📊', 'Tiến trình', '<div class="nodata">Không lấy được danh sách tiến trình</div>');
+    return;
+  }
+  let table = `<table class="proc-table">
+    <thead><tr>
+      <th>PID</th><th>Tên</th><th>CPU %</th><th>RAM %</th><th>Trạng thái</th>
+    </tr></thead><tbody>`;
+  d.processes.forEach(p => {
+    const cpuV = parseFloat(p.cpu) || 0;
+    const cpuColor = cpuV > 50 ? 'var(--red)' : cpuV > 20 ? 'var(--amber)' : 'var(--t1)';
+    table += `<tr>
+      <td style="color:var(--t3)">${p.pid}</td>
+      <td>${p.name}</td>
+      <td style="color:${cpuColor};font-weight:700">${p.cpu}</td>
+      <td style="color:var(--t2)">${p.mem}</td>
+      <td style="color:var(--t3)">${p.status}</td>
+    </tr>`;
+  });
+  table += '</tbody></table>';
+  document.getElementById('process-content').innerHTML = panel('📊', 'Top 20 tiến trình theo CPU', table);
+}
+
+// ── Load data ───────────────────────────────────────────────
+async function loadData() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spin');
+  document.getElementById('loadSub').textContent = 'Đang đọc phần cứng...';
+
+  try {
+    const res = await fetch('/api/hardware');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+
+    renderCPU(data);
+    renderRAM(data);
+    renderGPU(data);
+    renderBoard(data);
+    renderDisk(data);
+    renderOS(data);
+    renderNetwork(data);
+    renderTemp(data);
+    renderBattery(data);
+    renderProcess(data);
+
+    document.getElementById('topSub').textContent = data.os.node + ' · ' + data.os.name + ' · Quét: ' + data.scan_time;
+    document.getElementById('scanInfo').textContent = 'Lần quét lúc ' + data.timestamp + ' · Hoàn thành sau ' + data.scan_time;
+
+    document.getElementById('loading').classList.add('hide');
+  } catch (e) {
+    document.getElementById('loadSub').textContent = 'Lỗi: ' + e.message;
+  }
+  btn.classList.remove('spin');
+}
+
+loadData();
+// Tự làm mới mỗi 10 giây
+setInterval(loadData, 10000);
+</script>
+</body>
+</html>
