@@ -293,6 +293,18 @@ canvas.spark{width:100%;height:38px;display:block}
       </div>
     </div>
   </div>
+
+  <!-- Hardware Info -->
+  <div class="hw-section">
+    <div class="hw-section-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      Thông tin phần cứng
+    </div>
+    <div id="hw-root">
+      <div class="hw-loading">Đang tải dữ liệu...</div>
+    </div>
+  </div>
+
 </div><!-- .shell -->
 
 <script>
@@ -548,6 +560,149 @@ async function fetchStats(){
 }
 fetchStats();
 setInterval(fetchStats,1500);
+
+// ── Hardware Info ──────────────────────────────────────────────────────────
+const HW_API = 'http://localhost:5000/api/hardware';
+
+function fmtNum(v) {
+  const n = parseFloat(String(v).replace(/[^0-9.]/g,''));
+  return isNaN(n) ? v : Math.round(n).toLocaleString('vi-VN');
+}
+
+function buildCpuCard(hw) {
+  return `<div class="hw-card">
+    <div class="hw-card-head">
+      <div class="hw-icon" style="background:rgba(59,130,246,.12)">🖥</div>
+      <div><div class="hw-name">${hw.name}</div></div>
+    </div>
+  </div>`;
+}
+
+function buildGpuCard(hw) {
+  const fans = (hw.sensors['Fan'] || []).filter(f => parseFloat(f.value) > 0);
+  let bodyHTML = '';
+  if (fans.length > 0) {
+    const MAX_RPM = 4500;
+    const items = fans.map(f => {
+      const rpm = Math.round(parseFloat(f.value));
+      const pct = Math.min(100, rpm / MAX_RPM * 100).toFixed(1);
+      const col = rpm < 1500 ? 'var(--green)' : rpm < 3000 ? 'var(--amber)' : 'var(--red)';
+      return `<div class="fan-item">
+        <span class="fan-name">${f.name}</span>
+        <div class="fan-bar-track"><div class="fan-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+        <span class="fan-rpm" style="color:${col}">${rpm.toLocaleString('vi-VN')}</span><span class="fan-unit">RPM</span>
+      </div>`;
+    }).join('');
+    bodyHTML = `<div class="hw-divider"></div>
+      <div class="hw-body">
+        <div><div class="hw-body-label">💨 Tốc độ quạt</div>${items}</div>
+      </div>`;
+  }
+  return `<div class="hw-card">
+    <div class="hw-card-head">
+      <div class="hw-icon" style="background:rgba(245,158,11,.12)">🎮</div>
+      <div><div class="hw-name">${hw.name}</div></div>
+    </div>
+    ${bodyHTML}
+  </div>`;
+}
+
+function buildStorageCard(hw) {
+  const hours  = hw.sensors['PowerOnHours']  || [];
+  const counts = hw.sensors['PowerOnCount']  || [];
+  let bodyHTML = '';
+  if (hours.length > 0 || counts.length > 0) {
+    const cells = [
+      ...hours.map(h  => `<div class="smart-box">
+        <div class="smart-key">Thời gian bật</div>
+        <div><span class="smart-num">${fmtNum(h.value)}</span><span class="smart-unit"> giờ</span></div>
+      </div>`),
+      ...counts.map(c => `<div class="smart-box">
+        <div class="smart-key">Số lần bật</div>
+        <div><span class="smart-num">${fmtNum(c.value)}</span><span class="smart-unit"> lần</span></div>
+      </div>`),
+    ].join('');
+    bodyHTML = `<div class="hw-divider"></div>
+      <div class="hw-body"><div class="smart-row">${cells}</div></div>`;
+  }
+  return `<div class="hw-card">
+    <div class="hw-card-head">
+      <div class="hw-icon" style="background:rgba(16,185,129,.12)">💿</div>
+      <div><div class="hw-name">${hw.name}</div></div>
+    </div>
+    ${bodyHTML}
+  </div>`;
+}
+
+function renderHardware(data) {
+  const root = document.getElementById('hw-root');
+  if (!data) { root.innerHTML = '<div class="hw-loading">Không có dữ liệu.</div>'; return; }
+
+  const list = data.hw || [];
+  const sys  = data.sys || {};
+
+  const cpus    = list.filter(h => h.type === 'cpu');
+  const gpus    = list.filter(h => h.type === 'gpu');
+  const storage = list.filter(h => h.type === 'storage');
+  // Bỏ: network, bluetooth, ram, battery, other
+
+  // ── Card tên máy + mainboard ──
+  const computerLine = sys.computer
+    ? `<div class="hw-name">${sys.computer}</div>`
+    : '';
+  const boardLine = sys.board_name
+    ? `<div class="hw-sub">${sys.board_maker ? sys.board_maker + ' · ' : ''}${sys.board_name}</div>`
+    : '';
+  const sysCard = (computerLine || boardLine) ? `<div class="hw-card">
+    <div class="hw-card-head">
+      <div class="hw-icon" style="background:rgba(100,116,139,.15)">🖳</div>
+      <div>${computerLine}${boardLine}</div>
+    </div>
+  </div>` : '';
+
+  // ── Card RAM tổng ──
+  const ramCard = sys.ram_total_gb ? `<div class="hw-card">
+    <div class="hw-card-head">
+      <div class="hw-icon" style="background:rgba(167,139,250,.12)">🧠</div>
+      <div>
+        <div class="hw-name" style="color:var(--purple)">${sys.ram_total_gb} GB RAM</div>
+        ${sys.ram_slots ? `<div class="hw-sub">${sys.ram_slots} thanh${sys.ram_speed ? ' · ' + sys.ram_speed + ' MHz' : ''}</div>` : ''}
+      </div>
+    </div>
+  </div>` : '';
+
+  const colCpu = sysCard + ramCard + cpus.map(buildCpuCard).join('');
+  const colGpu = gpus.map(buildGpuCard).join('');
+  const colSsd = storage.map(buildStorageCard).join('');
+
+  root.innerHTML = `<div class="hw-cols">
+    <div class="hw-col">
+      <div class="hw-col-label" style="background:rgba(59,130,246,.1);color:#3b82f6">🖥 Hệ thống & CPU</div>
+      ${colCpu || '<div style="font-family:var(--mono);font-size:13px;color:var(--text3)">—</div>'}
+    </div>
+    <div class="hw-col">
+      <div class="hw-col-label" style="background:rgba(245,158,11,.1);color:#f59e0b">🎮 GPU</div>
+      ${colGpu || '<div style="font-family:var(--mono);font-size:13px;color:var(--text3)">—</div>'}
+    </div>
+    <div class="hw-col">
+      <div class="hw-col-label" style="background:rgba(16,185,129,.1);color:#10b981">💿 Ổ cứng / SSD</div>
+      ${colSsd || '<div style="font-family:var(--mono);font-size:13px;color:var(--text3)">—</div>'}
+    </div>
+  </div>`;
+}
+
+async function fetchHardware() {
+  try {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 5000);
+    const res = await fetch(HW_API, { cache:'no-store', signal:ctl.signal });
+    clearTimeout(t);
+    if (!res.ok) return;
+    renderHardware(await res.json());
+  } catch(e) {}
+}
+setTimeout(() => { fetchHardware(); setInterval(fetchHardware, 15000); }, 2500);
+
 </script>
 </body>
 </html>
