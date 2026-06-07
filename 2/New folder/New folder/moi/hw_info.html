@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Thông tin phần cứng</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117; --bg2:#181c25; --bg3:#1e2330; --bg4:#252b3b;
+  --border:rgba(255,255,255,.08); --border2:rgba(255,255,255,.15);
+  --text:#eef0f6; --text2:#8b92a8; --text3:#4e5670;
+  --blue:#4f8ef7; --green:#22d07a; --amber:#f5a623;
+  --purple:#b57bff; --red:#ff5c5c; --cyan:#2dd4bf;
+  --mono:'JetBrains Mono',monospace; --sans:'Inter',sans-serif;
+  --radius:16px;
+}
+html,body{background:var(--bg);color:var(--text);font-family:var(--sans);
+  min-height:100vh;-webkit-font-smoothing:antialiased;font-size:17px}
+.shell{max-width:1100px;margin:0 auto;padding:2rem 1.5rem 4rem}
+
+/* ── Header ── */
+.page-header{display:flex;align-items:center;gap:14px;
+  margin-bottom:2.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.page-icon{font-size:32px}
+.page-title{font-size:26px;font-weight:700;color:var(--text)}
+.page-sub{font-size:14px;color:var(--text3);margin-top:4px;font-family:var(--mono)}
+.refresh-btn{margin-left:auto;background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text2);font-family:var(--mono);font-size:13px;padding:8px 16px;
+  border-radius:8px;cursor:pointer;transition:all .2s}
+.refresh-btn:hover{background:var(--bg4);color:var(--text);border-color:var(--blue)}
+
+/* ── Section ── */
+.section{margin-bottom:2.5rem}
+.section-header{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
+.section-icon{font-size:22px}
+.section-title{font-size:20px;font-weight:700}
+.section-count{font-family:var(--mono);font-size:13px;color:var(--text3);
+  background:var(--bg3);padding:3px 10px;border-radius:20px;margin-left:4px}
+.section-line{flex:1;height:1px;background:var(--border);margin-left:8px}
+
+/* ── Cards grid ── */
+.cards{display:grid;gap:14px}
+.cards-2{grid-template-columns:repeat(auto-fill,minmax(420px,1fr))}
+.cards-3{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.cards-1{grid-template-columns:1fr}
+
+/* ── Card ── */
+.card{background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;transition:border-color .25s,transform .2s}
+.card:hover{border-color:var(--border2)}
+.card-head{padding:1.1rem 1.4rem;display:flex;align-items:center;gap:12px;
+  border-bottom:1px solid var(--border)}
+.card-badge{width:44px;height:44px;border-radius:12px;display:flex;
+  align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.card-title{font-size:16px;font-weight:700;color:var(--text);line-height:1.3}
+.card-sub{font-size:13px;color:var(--text3);margin-top:3px;font-family:var(--mono)}
+.card-body{padding:1.1rem 1.4rem;display:flex;flex-direction:column;gap:10px}
+
+/* ── Row ── */
+.row{display:flex;justify-content:space-between;align-items:center;
+  padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.row:last-child{border-bottom:none;padding-bottom:0}
+.row-key{font-size:15px;color:var(--text2);font-weight:500}
+.row-val{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--text);
+  text-align:right;max-width:60%;word-break:break-all}
+
+/* ── Big stat ── */
+.big-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:4px}
+.big-stat{background:var(--bg3);border-radius:12px;padding:.9rem 1rem;
+  display:flex;flex-direction:column;gap:5px}
+.big-key{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;font-family:var(--mono)}
+.big-num{font-size:28px;font-weight:700;line-height:1;font-family:var(--mono)}
+.big-unit{font-size:13px;color:var(--text3);font-family:var(--mono)}
+
+/* ── Bar ── */
+.bar-wrap{margin-top:4px}
+.bar-label{display:flex;justify-content:space-between;font-size:13px;
+  color:var(--text3);font-family:var(--mono);margin-bottom:5px}
+.bar-track{height:8px;background:var(--bg4);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+
+/* ── Tag ── */
+.tag{display:inline-block;font-size:12px;font-weight:600;font-family:var(--mono);
+  padding:3px 9px;border-radius:6px;letter-spacing:.05em}
+.tag-blue  {background:rgba(79,142,247,.15);color:#6fa8ff}
+.tag-green {background:rgba(34,208,122,.15); color:#3de08a}
+.tag-amber {background:rgba(245,166,35,.15); color:#ffbb55}
+.tag-red   {background:rgba(255,92,92,.15);  color:#ff7979}
+.tag-purple{background:rgba(181,123,255,.15);color:#c99aff}
+.tag-cyan  {background:rgba(45,212,191,.15); color:#5de8d5}
+.tag-gray  {background:rgba(100,110,140,.15);color:#8892aa}
+
+/* ── Disk usage ── */
+.disk-usage-row{display:flex;align-items:center;gap:10px;
+  padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.disk-usage-row:last-child{border-bottom:none}
+.disk-letter{font-family:var(--mono);font-size:18px;font-weight:700;
+  color:var(--cyan);min-width:36px}
+.disk-bar-wrap{flex:1}
+.disk-bar-info{display:flex;justify-content:space-between;
+  font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:4px}
+.disk-bar-track{height:7px;background:var(--bg4);border-radius:4px;overflow:hidden}
+.disk-bar-fill{height:100%;border-radius:4px}
+
+/* ── Battery ── */
+.bat-shell{display:flex;align-items:center;gap:4px;margin-bottom:8px}
+.bat-body{flex:1;height:30px;border:2px solid var(--border2);border-radius:6px;
+  position:relative;overflow:hidden}
+.bat-fill{height:100%;border-radius:4px;transition:width .8s}
+.bat-tip{width:6px;height:14px;background:var(--border2);border-radius:0 3px 3px 0}
+
+/* ── Spinner / empty ── */
+.loading{text-align:center;padding:4rem;font-family:var(--mono);
+  font-size:16px;color:var(--text3)}
+.spinner{display:inline-block;width:32px;height:32px;
+  border:3px solid var(--border2);border-top-color:var(--blue);
+  border-radius:50%;animation:spin .7s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{font-family:var(--mono);font-size:14px;color:var(--text3);
+  padding:1rem 0;text-align:center}
+
+@media(max-width:700px){
+  .cards-2,.cards-3{grid-template-columns:1fr}
+  .big-stats{grid-template-columns:1fr 1fr}
+  .row-key,.row-val{font-size:14px}
+  .page-title{font-size:20px}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div style="margin-bottom:1rem;display:flex;gap:10px">
+    <a href="/" style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
+       padding:7px 16px;border-radius:8px;border:1px solid var(--border2);
+       background:var(--bg2);color:var(--text2);text-decoration:none">
+      🌡 Nhiệt độ
+    </a>
+    <a href="/hardware" style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
+       padding:7px 16px;border-radius:8px;border:1px solid var(--blue);
+       background:rgba(79,142,247,.12);color:var(--blue);text-decoration:none">
+      🖥 Phần cứng
+    </a>
+  </div>
+
+
+  <div class="page-header">
+    <div class="page-icon">🖥</div>
+    <div>
+      <div class="page-title">Thông tin phần cứng</div>
+      <div class="page-sub" id="pg-sub">Đang tải...</div>
+    </div>
+    <button class="refresh-btn" onclick="loadData()">↺ Làm mới</button>
+  </div>
+
+  <div id="root"><div class="loading"><div class="spinner"></div><br>Đang đọc thông tin phần cứng...</div></div>
+
+</div>
+<script>
+const API = 'http://localhost:5000/api/hw';
+
+/* ── helpers ── */
+const v  = (x, fb='N/A') => (x==null||x===''||x==='N/A') ? fb : x;
+const row = (k, val, tag='') => val && val!='N/A' ?
+  `<div class="row"><span class="row-key">${k}</span><span class="row-val">${tag||val}</span></div>` : '';
+const bigStat = (k, num, unit, color='var(--blue)') =>
+  `<div class="big-stat"><div class="big-key">${k}</div>
+   <div><span class="big-num" style="color:${color}">${num}</span><span class="big-unit"> ${unit}</span></div></div>`;
+
+function bar(pct, color='var(--blue)', label='', right='') {
+  const col = pct>85?'var(--red)':pct>65?'var(--amber)':color;
+  return `<div class="bar-wrap">
+    ${label||right?`<div class="bar-label"><span>${label}</span><span>${right}</span></div>`:''}
+    <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div>
+  </div>`;
+}
+
+function section(icon, title, count, content) {
+  return `<div class="section">
+    <div class="section-header">
+      <span class="section-icon">${icon}</span>
+      <span class="section-title" style="color:var(--text)">${title}</span>
+      ${count>0?`<span class="section-count">${count}</span>`:''}
+      <div class="section-line"></div>
+    </div>
+    ${content}
+  </div>`;
+}
+
+/* ── renderers ── */
+function renderBoard(b, os) {
+  if (!b && !os) return '';
+  const rows = [
+    row('Tên máy tính',   b.computer),
+    row('Hãng sản xuất',  b.sys_maker !== b.board_maker ? b.sys_maker : null),
+    row('Model máy',      b.sys_model),
+    row('Mainboard',      b.board_name),
+    row('Nhà SX Mainboard', b.board_maker),
+    row('Phiên bản Board', b.board_ver),
+    row('BIOS',           b.bios_name),
+    row('BIOS Hãng',      b.bios_maker),
+    row('Ngày BIOS',      b.bios_date),
+    row('Hệ điều hành',   os ? `${os.name} ${os.release}` : null),
+    row('Phiên bản OS',   os?.version?.split(' ').slice(0,4).join(' ')),
+  ].join('');
+  return section('🔧','Máy tính & Mainboard',0,
+    `<div class="cards cards-1"><div class="card">
+      <div class="card-head">
+        <div class="card-badge" style="background:rgba(100,116,139,.2)">🔧</div>
+        <div>
+          <div class="card-title">${v(b.computer,'Máy tính')}</div>
+          <div class="card-sub">${v(b.board_maker,'')}${b.board_name?' · '+b.board_name:''}</div>
+        </div>
+      </div>
+      <div class="card-body">${rows}</div>
+    </div></div>`);
+}
+
+function renderCPU(cpus) {
+  if (!cpus?.length) return '';
+  const cards = cpus.map(c => {
+    const stats = `<div class="big-stats">
+      ${bigStat('Nhân',   v(c.cores,'-'), 'cores', 'var(--blue)')}
+      ${bigStat('Luồng',  v(c.threads,'-'), 'threads', 'var(--cyan)')}
+      ${bigStat('Xung',   c.cur_ghz||'-', 'GHz', 'var(--green)')}
+      ${c.usage_pct!=null?bigStat('Tải',c.usage_pct,'%','var(--amber)'):''}
+    </div>`;
+    const details = [
+      row('Hãng sản xuất', c.manufacturer),
+      row('Kiến trúc',     c.arch),
+      row('Tốc độ tối đa', c.max_mhz ? c.max_mhz+' MHz' : null),
+      row('Cache L2',      c.l2_kb && c.l2_kb!='N/A' ? c.l2_kb+' KB' : null),
+      row('Cache L3',      c.l3_kb && c.l3_kb!='N/A' ? Math.round(c.l3_kb/1024)+' MB' : null),
+    ].join('');
+    const usageBar = c.usage_pct!=null ? bar(c.usage_pct,'var(--blue)','Mức sử dụng CPU',c.usage_pct+'%') : '';
+    return `<div class="card">
+      <div class="card-head">
+        <div class="card-badge" style="background:rgba(79,142,247,.15)">🖥</div>
+        <div><div class="card-title">${v(c.name,'CPU')}</div></div>
+      </div>
+      <div class="card-body">${stats}${usageBar}${details}</div>
+    </div>`;
+  }).join('');
+  return section('🖥','Bộ xử lý (CPU)',cpus.length,`<div class="cards cards-1">${cards}</div>`);
+}
+
+function renderGPU(gpus) {
+  if (!gpus?.length) return '';
+  const cards = gpus.map(g => {
+    const details = [
+      row('VRAM',       g.vram_gb ? g.vram_gb+' GB' : null),
+      row('Độ phân giải', g.resolution),
+      row('Tần số quét', g.refresh ? g.refresh+' Hz' : null),
+      row('Driver',     g.driver),
+    ].join('');
+    return `<div class="card">
+      <div class="card-head">
+        <div class="card-badge" style="background:rgba(245,166,35,.15)">🎮</div>
+        <div>
+          <div class="card-title">${v(g.name,'GPU')}</div>
+          ${g.vram_gb?`<div class="card-sub">${g.vram_gb} GB VRAM</div>`:''}
+        </div>
+      </div>
+      <div class="card-body">${details}</div>
+    </div>`;
+  }).join('');
+  return section('🎮','Card đồ hoạ (GPU)',gpus.length,`<div class="cards cards-2">${cards}</div>`);
+}
+
+function renderRAM(ram) {
+  if (!ram) return '';
+  const usagePct = ram.usage_pct || 0;
+  const summary = `<div class="big-stats">
+    ${bigStat('Tổng',  ram.total_gb, 'GB', 'var(--purple)')}
+    ${bigStat('Đã dùng', ram.used_gb, 'GB', 'var(--amber)')}
+    ${bigStat('Còn trống', (ram.total_gb-ram.used_gb).toFixed(2), 'GB', 'var(--green)')}
+    ${bigStat('Mức dùng', usagePct, '%', usagePct>80?'var(--red)':'var(--blue)')}
+  </div>
+  ${bar(usagePct,'var(--purple)','Đã sử dụng RAM', ram.used_gb+' / '+ram.total_gb+' GB')}`;
+
+  const stickCards = (ram.sticks||[]).map((s,i) => `<div class="card">
+    <div class="card-head">
+      <div class="card-badge" style="background:rgba(181,123,255,.15)">🧠</div>
+      <div>
+        <div class="card-title">${s.size_gb ? s.size_gb+' GB' : 'RAM'} — ${v(s.slot,'Slot '+(i+1))}</div>
+        <div class="card-sub">${v(s.type,'DDR')}${s.speed_mhz && s.speed_mhz!='N/A' ? ' · '+s.speed_mhz+' MHz':''} · ${v(s.form,'DIMM')}</div>
+      </div>
+    </div>
+    <div class="card-body">
+      ${row('Ngân hàng slot', s.bank)}
+      ${row('Hãng sản xuất', s.maker)}
+      ${row('Mã sản phẩm',   s.part)}
+    </div>
+  </div>`).join('');
+
+  return section('🧠','Bộ nhớ RAM', (ram.sticks||[]).length,
+    `<div class="cards cards-1"><div class="card">
+      <div class="card-head">
+        <div class="card-badge" style="background:rgba(181,123,255,.15)">🧠</div>
+        <div>
+          <div class="card-title">${ram.total_gb} GB RAM — ${(ram.sticks||[]).length} thanh</div>
+          <div class="card-sub">Đã dùng ${ram.used_gb} GB (${usagePct}%)</div>
+        </div>
+      </div>
+      <div class="card-body">${summary}</div>
+    </div></div>
+    <div style="height:12px"></div>
+    <div class="cards cards-3">${stickCards}</div>`);
+}
+
+function renderStorage(storage) {
+  if (!storage?.drives?.length) return '';
+  const usage = storage.usage || {};
+
+  const driveCards = storage.drives.map(d => {
+    const smart = (d.hours!=null||d.cycles!=null) ? `
+      <div class="big-stats" style="margin-top:6px">
+        ${d.hours!=null ? bigStat('Giờ bật',d.hours.toLocaleString('vi-VN'),'giờ','var(--amber)') : ''}
+        ${d.cycles!=null? bigStat('Lần bật',d.cycles.toLocaleString('vi-VN'),'lần','var(--red)') : ''}
+      </div>` : '';
+
+    // Tìm partition usage của ổ này
+    const partUsages = Object.entries(usage).filter(([dev]) => {
+      return true; // hiện tất cả partitions
+    });
+
+    return `<div class="card">
+      <div class="card-head">
+        <div class="card-badge" style="background:rgba(34,208,122,.15)">💿</div>
+        <div>
+          <div class="card-title">${v(d.model,'Ổ cứng')}</div>
+          <div class="card-sub">
+            ${d.size_gb ? d.size_gb+' GB' : ''} 
+            ${d.interface && d.interface!='N/A' ? ' · '+d.interface : ''}
+            ${d.media && d.media!='N/A'? ' · '+d.media:''}
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        ${row('Serial',   d.serial && d.serial.length<30 ? d.serial : null)}
+        ${row('Firmware', d.firmware)}
+        ${row('Số phân vùng', d.partitions)}
+        ${smart}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Partition usage
+  const partRows = Object.entries(usage).map(([dev, u]) =>
+    `<div class="disk-usage-row">
+      <div class="disk-letter">${u.mount.replace(':\\','').replace('/','/')}</div>
+      <div class="disk-bar-wrap">
+        <div class="disk-bar-info">
+          <span>${u.fs || ''}</span>
+          <span>${u.used_gb} / ${u.total_gb} GB (${u.pct}%)</span>
+        </div>
+        <div class="disk-bar-track">
+          <div class="disk-bar-fill" style="width:${u.pct}%;background:${u.pct>85?'var(--red)':u.pct>65?'var(--amber)':'var(--cyan)'}"></div>
+        </div>
+      </div>
+    </div>`
+  ).join('');
+
+  const partCard = partRows ? `<div class="cards cards-1" style="margin-top:12px">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-badge" style="background:rgba(45,212,191,.15)">📂</div>
+        <div><div class="card-title">Dung lượng phân vùng</div></div>
+      </div>
+      <div class="card-body">${partRows}</div>
+    </div>
+  </div>` : '';
+
+  return section('💿','Ổ cứng / SSD', storage.drives.length,
+    `<div class="cards cards-2">${driveCards}</div>${partCard}`);
+}
+
+function renderNetwork(nics) {
+  if (!nics?.length) return '';
+  const byType = {WiFi:[], LAN:[], Bluetooth:[], Other:[]};
+  nics.forEach(n => {
+    const t = ['WiFi','LAN','Bluetooth'].includes(n.type) ? n.type : 'Other';
+    byType[t].push(n);
+  });
+  const typeIcon = {WiFi:'📶', LAN:'🔌', Bluetooth:'🔵', Other:'🌐'};
+  const typeColor= {WiFi:'var(--blue)',LAN:'var(--green)',Bluetooth:'var(--purple)',Other:'var(--text3)'};
+
+  const cards = nics.map(n => {
+    const icon  = typeIcon[n.type]  || '🌐';
+    const color = typeColor[n.type] || 'var(--text3)';
+    const enabledTag = n.enabled===true  ? `<span class="tag tag-green">Đang bật</span>` :
+                       n.enabled===false ? `<span class="tag tag-gray">Tắt</span>` : '';
+    return `<div class="card">
+      <div class="card-head">
+        <div class="card-badge" style="background:${color}22">${icon}</div>
+        <div>
+          <div class="card-title">${v(n.name)}</div>
+          <div class="card-sub" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <span class="tag ${n.type==='WiFi'?'tag-blue':n.type==='LAN'?'tag-green':n.type==='Bluetooth'?'tag-purple':'tag-gray'}">${n.type}</span>
+            ${enabledTag}
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        ${row('Tên kết nối', n.conn_id)}
+        ${row('Hãng sản xuất', n.maker)}
+        ${row('Địa chỉ MAC', n.mac)}
+        ${row('Tốc độ', n.speed && n.speed!='N/A' ? n.speed : null)}
+      </div>
+    </div>`;
+  }).join('');
+  return section('🌐','Card mạng & Bluetooth', nics.length, `<div class="cards cards-2">${cards}</div>`);
+}
+
+function renderSound(sounds) {
+  if (!sounds?.length) return '';
+  const cards = sounds.map(s => `<div class="card">
+    <div class="card-head">
+      <div class="card-badge" style="background:rgba(45,212,191,.15)">🔊</div>
+      <div>
+        <div class="card-title">${v(s.name,'Thiết bị âm thanh')}</div>
+        <div class="card-sub">${v(s.maker,'')}</div>
+      </div>
+    </div>
+    <div class="card-body">
+      ${row('Hãng sản xuất', s.maker)}
+      ${row('Trạng thái', s.status)}
+    </div>
+  </div>`).join('');
+  return section('🔊','Âm thanh', sounds.length, `<div class="cards cards-3">${cards}</div>`);
+}
+
+function renderBattery(bat) {
+  if (!bat) return '';
+  const pct = parseFloat(bat.percent) || 0;
+  const batColor = pct>50?'var(--green)':pct>20?'var(--amber)':'var(--red)';
+  const statusTag = bat.status==='Đang sạc' ? `<span class="tag tag-green">⚡ Đang sạc</span>` :
+                    bat.status==='Đầy'       ? `<span class="tag tag-blue">✓ Đầy</span>` :
+                                               `<span class="tag tag-amber">▼ Đang xả</span>`;
+  const healthTag = bat.health!=null ?
+    `<span class="tag ${bat.health>80?'tag-green':bat.health>60?'tag-amber':'tag-red'}">${bat.health}% sức khoẻ</span>` : '';
+
+  const batBar = `<div class="bat-shell">
+    <div class="bat-body">
+      <div class="bat-fill" style="width:${pct}%;background:${batColor}"></div>
+    </div>
+    <div class="bat-tip"></div>
+  </div>`;
+
+  const stats = `<div class="big-stats">
+    ${bigStat('Pin còn', pct, '%', batColor)}
+    ${bat.health!=null ? bigStat('Sức khoẻ', bat.health, '%', bat.health>80?'var(--green)':bat.health>60?'var(--amber)':'var(--red)') : ''}
+  </div>`;
+
+  return section('🔋','Pin', 0, `<div class="cards cards-1"><div class="card">
+    <div class="card-head">
+      <div class="card-badge" style="background:rgba(34,208,122,.15)">🔋</div>
+      <div>
+        <div class="card-title" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          Pin ${pct}% ${statusTag} ${healthTag}
+        </div>
+        ${bat.time_left?`<div class="card-sub">${bat.time_left} còn lại</div>`:''}
+      </div>
+    </div>
+    <div class="card-body">
+      ${batBar}${stats}
+      ${row('Trạng thái', bat.status)}
+      ${row('Thời gian còn lại', bat.time_left)}
+    </div>
+  </div></div>`);
+}
+
+/* ── Main render ── */
+function render(d) {
+  const root = document.getElementById('root');
+  const html = [
+    renderBoard(d.board, d.os),
+    renderCPU(d.cpu),
+    renderGPU(d.gpu),
+    renderRAM(d.ram),
+    renderStorage(d.storage),
+    renderNetwork(d.network),
+    renderSound(d.sound),
+    renderBattery(d.battery),
+  ].filter(Boolean).join('');
+  root.innerHTML = html || '<div class="loading">Không có dữ liệu.</div>';
+
+  // Update page subtitle
+  const b = d.board || {};
+  const pc = v(b.computer, v(b.sys_model, 'Máy tính'));
+  const now = new Date().toLocaleString('vi-VN');
+  document.getElementById('pg-sub').textContent = `${pc} — Cập nhật: ${now}`;
+  document.title = `Phần cứng — ${pc}`;
+}
+
+async function loadData() {
+  document.getElementById('root').innerHTML =
+    '<div class="loading"><div class="spinner"></div><br>Đang tải...</div>';
+  try {
+    const res = await fetch(API, { cache:'no-store' });
+    if (!res.ok) throw new Error();
+    render(await res.json());
+  } catch(e) {
+    document.getElementById('root').innerHTML =
+      `<div class="loading">
+        <div style="font-size:24px;margin-bottom:12px">⚠️</div>
+        Không kết nối được server.<br>
+        <span style="font-size:14px;margin-top:8px;display:block">Chạy: <code style="color:var(--blue)">python hw_info.py</code></span>
+      </div>`;
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
