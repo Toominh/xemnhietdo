@@ -1,4 +1,6 @@
-<html lang="vi"><head>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>System Monitor</title>
@@ -8,7 +10,7 @@
 :root{
   --bg:#0d0e11;--bg2:#13151a;--bg3:#1a1d24;
   --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.14);
-  --text:#e8eaf0;--text2:#7c8394;--text3:#77819c;
+  --text:#e8eaf0;--text2:#7c8394;--text3:#454a58;
   --blue:#3b82f6;--amber:#f59e0b;--purple:#a78bfa;
   --green:#10b981;--red:#ef4444;
   --mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;
@@ -64,7 +66,7 @@ canvas.spark{width:100%;height:38px;display:block}
 .act-track{flex:1;height:7px;background:var(--bg3);border-radius:4px;overflow:visible;position:relative}
 .act-fill{height:100%;border-radius:4px;width:0%;transition:width .9s cubic-bezier(.4,0,.2,1);position:relative}
 .act-fill::after{content:'';position:absolute;right:-1px;top:50%;transform:translateY(-50%);width:9px;height:9px;border-radius:50%;background:inherit;box-shadow:0 0 7px currentColor}
-.act-pct{font-family:var(--mono);font-size:16px;font-weight:500;min-width:46px;text-align:right}
+.act-pct{font-family:var(--mono);font-size:15px;font-weight:500;min-width:46px;text-align:right}
 .act-detail{font-family:var(--mono);font-size:13px;color:var(--text3);min-width:90px;text-align:right}
 
 /* speed */
@@ -117,10 +119,10 @@ canvas.spark{width:100%;height:38px;display:block}
 
 @media(max-width:600px){.row2{grid-template-columns:1fr}.temp-num{font-size:48px}}
 </style>
-<link type="text/css" rel="stylesheet" id="dark-mode-custom-link"><link type="text/css" rel="stylesheet" id="dark-mode-general-link"><style lang="en" type="text/css" id="dark-mode-custom-style"></style><style lang="en" type="text/css" id="dark-mode-native-style"></style><style lang="en" type="text/css" id="dark-mode-native-sheet"></style></head>
+</head>
 <body>
 
-<div class="overlay hidden" id="overlay">
+<div class="overlay" id="overlay">
   <div class="spinner"></div>
   <div class="ov-title">Đang kết nối server...</div>
   <div class="ov-hint" id="ov-hint">Đảm bảo server.py đang chạy<br><code style="color:var(--blue)">python server.py</code></div>
@@ -142,12 +144,131 @@ canvas.spark{width:100%;height:38px;display:block}
   <div class="topbar">
     <div class="live-dot"></div>
     <div class="topbar-title">System Monitor</div>
-    <span class="conn-badge conn-ok" id="conn-badge">LIVE</span>
-    <div class="topbar-clock" id="clock">22:15:08</div>
+    <span class="conn-badge conn-wait" id="conn-badge">CONNECTING</span>
+    <div class="topbar-clock" id="clock">--:--:--</div>
   </div>
 
   <!-- Temp row: CPU + GPU -->
-  <div id="bat-section" style="margin-top: 12px; display: none;">
+  <div class="row2" style="margin-bottom:12px">
+    <div class="card" id="cpu-card">
+      <div class="card-accent" style="background:linear-gradient(90deg,var(--blue),transparent)"></div>
+      <div class="card-tag"><div class="chip" style="background:var(--blue)"></div>CPU · Temperature</div>
+      <span class="temp-num" id="cpu-temp" style="color:var(--blue)">--</span><span class="temp-unit">°C</span>
+      <div class="bar-track"><div class="bar-fill" id="cpu-temp-bar"></div></div>
+      <div class="temp-footer"><span class="temp-mm" id="cpu-mm">—</span><span class="badge badge-cool" id="cpu-badge">—</span></div>
+      <div class="spark-wrap"><canvas class="spark" id="sp-cpu-temp"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-accent" style="background:linear-gradient(90deg,var(--amber),transparent)"></div>
+      <div class="card-tag"><div class="chip" style="background:var(--amber)"></div>GPU · Temperature</div>
+      <span class="temp-num" id="gpu-temp" style="color:var(--amber)">--</span><span class="temp-unit">°C</span>
+      <div class="bar-track"><div class="bar-fill" id="gpu-temp-bar"></div></div>
+      <div class="temp-footer"><span class="temp-mm" id="gpu-mm">—</span><span class="badge badge-cool" id="gpu-badge">—</span></div>
+      <div class="spark-wrap"><canvas class="spark" id="sp-gpu-temp"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Drive temps (dynamic) -->
+  <div class="row4" id="drive-row" style="display:none;margin-bottom:12px"></div>
+
+  <!-- RAM temp (hidden until available) -->
+  <div class="row2" id="ram-temp-wrap" style="display:none;margin-bottom:12px">
+    <div class="card">
+      <div class="card-accent" style="background:linear-gradient(90deg,var(--purple),transparent)"></div>
+      <div class="card-tag"><div class="chip" style="background:var(--purple)"></div>RAM · Temperature</div>
+      <span class="temp-num" id="ram-temp" style="color:var(--purple)">--</span><span class="temp-unit">°C</span>
+      <div class="bar-track"><div class="bar-fill" id="ram-temp-bar" style="background:var(--purple)"></div></div>
+      <div class="temp-footer"><span class="temp-mm" id="ram-mm">—</span><span class="badge badge-cool" id="ram-badge">—</span></div>
+    </div>
+    <div></div>
+  </div>
+
+  <!-- Activity bars -->
+  <div class="act-section">
+    <div class="section-lbl">Mức hoạt động</div>
+    <div class="act-row">
+      <div class="act-name">CPU</div>
+      <div class="act-track"><div class="act-fill" id="bar-cpu" style="background:var(--blue)"></div></div>
+      <div class="act-pct" id="pct-cpu" style="color:var(--blue)">--%</div>
+      <div class="act-detail" id="det-cpu-freq">-- GHz</div>
+    </div>
+    <div class="act-row">
+      <div class="act-name">GPU</div>
+      <div class="act-track"><div class="act-fill" id="bar-gpu" style="background:var(--amber)"></div></div>
+      <div class="act-pct" id="pct-gpu" style="color:var(--amber)">--%</div>
+      <div class="act-detail" id="det-gpu-vram">—</div>
+    </div>
+    <div class="act-row">
+      <div class="act-name">RAM</div>
+      <div class="act-track"><div class="act-fill" id="bar-ram" style="background:var(--purple)"></div></div>
+      <div class="act-pct" id="pct-ram" style="color:var(--purple)">--%</div>
+      <div class="act-detail" id="det-ram">-- / -- GB</div>
+    </div>
+    <div class="act-row">
+      <div class="act-name">SSD</div>
+      <div class="act-track"><div class="act-fill" id="bar-ssd" style="background:var(--green)"></div></div>
+      <div class="act-pct" id="pct-ssd" style="color:var(--green)">--%</div>
+      <div class="act-detail">I/O Activity</div>
+    </div>
+  </div>
+
+  <!-- Disk R/W + Network -->
+  <div class="row2">
+    <div class="card">
+      <div class="card-accent" style="background:linear-gradient(90deg,var(--green),transparent)"></div>
+      <div class="card-tag"><div class="chip" style="background:var(--green)"></div>Disk · Read / Write</div>
+      <div class="speed-grid">
+        <div class="speed-item">
+          <div class="speed-lbl"><span style="color:var(--blue)">↓</span> Read</div>
+          <div><span class="speed-val" id="disk-r" style="color:var(--blue)">0</span><span class="speed-unit">MB/s</span></div>
+        </div>
+        <div class="speed-item">
+          <div class="speed-lbl"><span style="color:var(--amber)">↑</span> Write</div>
+          <div><span class="speed-val" id="disk-w" style="color:var(--amber)">0</span><span class="speed-unit">MB/s</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-accent" style="background:linear-gradient(90deg,var(--purple),transparent)"></div>
+      <div class="card-tag"><div class="chip" style="background:var(--purple)"></div>Network · Down / Up</div>
+      <div class="speed-grid">
+        <div class="speed-item">
+          <div class="speed-lbl"><span style="color:var(--blue)">↓</span> Down</div>
+          <div><span class="speed-val" id="net-d" style="color:var(--blue)">0</span><span class="speed-unit">MB/s</span></div>
+        </div>
+        <div class="speed-item">
+          <div class="speed-lbl"><span style="color:var(--green)">↑</span> Up</div>
+          <div><span class="speed-val" id="net-u" style="color:var(--green)">0</span><span class="speed-unit">MB/s</span></div>
+        </div>
+      </div>
+      <div class="iface-tag" id="net-iface">—</div>
+    </div>
+  </div>
+
+  <!-- Detail: CPU + RAM -->
+  <div class="row2" style="margin-top:12px">
+    <div class="card">
+      <div class="section-lbl">CPU · Chi tiết</div>
+      <div class="spark-wrap" style="margin-top:0;margin-bottom:6px"><canvas class="spark" id="sp-cpu-act"></canvas></div>
+      <div class="detail-grid">
+        <div class="detail-item"><span class="detail-key">Nhân vật lý</span><span class="detail-val" id="d-cores">--</span></div>
+        <div class="detail-item"><span class="detail-key">Luồng logic</span><span class="detail-val" id="d-threads">--</span></div>
+        <div class="detail-item"><span class="detail-key">Xung nhịp</span><span class="detail-val" id="d-freq">-- GHz</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-lbl">RAM · Chi tiết</div>
+      <div class="spark-wrap" style="margin-top:0;margin-bottom:6px"><canvas class="spark" id="sp-ram"></canvas></div>
+      <div class="detail-grid">
+        <div class="detail-item"><span class="detail-key">Đã sử dụng</span><span class="detail-val" id="d-ram-used">-- GB</span></div>
+        <div class="detail-item"><span class="detail-key">Còn trống</span><span class="detail-val" id="d-ram-free">-- GB</span></div>
+        <div class="detail-item"><span class="detail-key">Tổng</span><span class="detail-val" id="d-ram-total">-- GB</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Battery -->
+  <div id="bat-section" style="display:none;margin-top:12px">
     <div class="card">
       <div class="card-accent" style="background:linear-gradient(90deg,#22c55e,transparent)"></div>
       <div class="card-tag"><div class="chip" style="background:#22c55e"></div>Battery</div>
@@ -184,229 +305,16 @@ canvas.spark{width:100%;height:38px;display:block}
       </div>
     </div>
   </div>
-<div class="row2" style="margin-bottom:12px">
-    <div class="card" id="cpu-card">
-      <div class="card-accent" style="/* background:linear-gradient(90deg,var(--blue),transparent); */"></div>
-      <div class="card-tag"><div class="chip" style="background:var(--blue)"></div>CPU · Temperature</div>
-      <span class="temp-num" id="cpu-temp" style="color: rgb(245, 158, 11);">64</span><span class="temp-unit">°C</span>
-      <div class="bar-track"><div class="bar-fill" id="cpu-temp-bar" style="width: 64%; background: rgb(245, 158, 11);"></div></div>
-      <div class="temp-footer"><span class="temp-mm" id="cpu-mm">Min 48° · Max 70°</span><span class="badge badge-warm" id="cpu-badge">WARM</span></div>
-      <div class="spark-wrap"><canvas class="spark" id="sp-cpu-temp" width="478" height="47"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="card-accent" style="/* background:linear-gradient(90deg,var(--amber),transparent); */"></div>
-      <div class="card-tag"><div class="chip" style="background:var(--amber)"></div>GPU · Temperature</div>
-      <span class="temp-num" id="gpu-temp" style="color: rgb(59, 130, 246);">57</span><span class="temp-unit">°C</span>
-      <div class="bar-track"><div class="bar-fill" id="gpu-temp-bar" style="width: 57%; background: rgb(59, 130, 246);"></div></div>
-      <div class="temp-footer"><span class="temp-mm" id="gpu-mm">Min 55° · Max 60°</span><span class="badge badge-cool" id="gpu-badge">COOL</span></div>
-      <div class="spark-wrap"><canvas class="spark" id="sp-gpu-temp" width="478" height="47"></canvas></div>
-    </div>
-  </div>
-
-  <div class="act-section">
-    <div class="section-lbl">Mức hoạt động</div>
-    <div class="act-row">
-      <div class="act-name">CPU</div>
-      <div class="act-track"><div class="act-fill" id="bar-cpu" style="background: var(--blue); width: 53.4%;"></div></div>
-      <div class="act-pct" id="pct-cpu" style="color:var(--blue)">53.4%</div>
-      <div class="act-detail" id="det-cpu-freq">3.30 GHz</div>
-    </div>
-    <div class="act-row">
-      <div class="act-name">GPU</div>
-      <div class="act-track"><div class="act-fill" id="bar-gpu" style="background: var(--amber); width: 48%;"></div></div>
-      <div class="act-pct" id="pct-gpu" style="color:var(--amber)">48%</div>
-      <div class="act-detail" id="det-gpu-vram">VRAM 0.35/1GB</div>
-    </div>
-    <div class="act-row">
-      <div class="act-name">RAM</div>
-      <div class="act-track"><div class="act-fill" id="bar-ram" style="background: var(--purple); width: 35.1%;"></div></div>
-      <div class="act-pct" id="pct-ram" style="color:var(--purple)">35.1%</div>
-      <div class="act-detail" id="det-ram">5.61 / 15.98 GB</div>
-    </div>
-    <div class="act-row">
-      <div class="act-name">SSD</div>
-      <div class="act-track"><div class="act-fill" id="bar-ssd" style="background: var(--green); width: 0%;"></div></div>
-      <div class="act-pct" id="pct-ssd" style="color:var(--green)">0%</div>
-      <div class="act-detail">I/O Activity</div>
-    </div>
-  </div><!-- Drive temps (dynamic) -->
-  <div class="row2">
-    <div class="card">
-      <div class="card-accent" style="/* background:linear-gradient(90deg,var(--green),transparent); */"></div>
-      <div class="card-tag"><div class="chip" style="background:var(--green)"></div>Disk · Read / Write</div>
-      <div class="speed-grid">
-        <div class="speed-item">
-          <div class="speed-lbl"><span style="color:var(--blue)">↓</span> Read</div>
-          <div><span class="speed-val" id="disk-r" style="color:var(--blue)">0</span><span class="speed-unit">MB/s</span></div>
-        </div>
-        <div class="speed-item">
-          <div class="speed-lbl"><span style="color:var(--amber)">↑</span> Write</div>
-          <div><span class="speed-val" id="disk-w" style="color:var(--amber)">0.51</span><span class="speed-unit">MB/s</span></div>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-accent" style="/* background:linear-gradient(90deg,var(--purple),transparent); */"></div>
-      <div class="card-tag"><div class="chip" style="background:var(--purple)"></div>Network · Down / Up</div>
-      <div class="speed-grid">
-        <div class="speed-item">
-          <div class="speed-lbl"><span style="color:var(--blue)">↓</span> Down</div>
-          <div><span class="speed-val" id="net-d" style="color:var(--blue)">0.005</span><span class="speed-unit">MB/s</span></div>
-        </div>
-        <div class="speed-item">
-          <div class="speed-lbl"><span style="color:var(--green)">↑</span> Up</div>
-          <div><span class="speed-val" id="net-u" style="color:var(--green)">0</span><span class="speed-unit">MB/s</span></div>
-        </div>
-      </div>
-      <div class="iface-tag" id="net-iface">Wi-Fi</div>
-    </div>
-  </div><div class="row2" style="margin-top:12px">
-    <div class="card">
-      <div class="section-lbl">CPU · Chi tiết</div>
-      <div class="spark-wrap" style="margin-top:0;margin-bottom:6px"><canvas class="spark" id="sp-cpu-act" width="478" height="47"></canvas></div>
-      <div class="detail-grid">
-        <div class="detail-item"><span class="detail-key">Nhân vật lý</span><span class="detail-val" id="d-cores">4</span></div>
-        <div class="detail-item"><span class="detail-key">Luồng logic</span><span class="detail-val" id="d-threads">4</span></div>
-        <div class="detail-item"><span class="detail-key">Xung nhịp</span><span class="detail-val" id="d-freq">3.30 GHz</span></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="section-lbl">RAM · Chi tiết</div>
-      <div class="spark-wrap" style="margin-top:0;margin-bottom:6px"><canvas class="spark" id="sp-ram" width="478" height="47"></canvas></div>
-      <div class="detail-grid">
-        <div class="detail-item"><span class="detail-key">Đã sử dụng</span><span class="detail-val" id="d-ram-used">5.61 GB</span></div>
-        <div class="detail-item"><span class="detail-key">Còn trống</span><span class="detail-val" id="d-ram-free">10.37 GB</span></div>
-        <div class="detail-item"><span class="detail-key">Tổng</span><span class="detail-val" id="d-ram-total">15.98 GB</span></div>
-      </div>
-    </div>
-  </div><div class="row4" id="drive-row" style="display: grid; margin-bottom: 12px;"><div id="dcard-0" class="drive-card"><div class="card-accent" style="/* background:linear-gradient(90deg,var(--green),transparent); */"></div>
-          <div class="drive-name" id="dname-0">WDC WD20EARX-00PASB0</div>
-          <span class="drive-temp" id="dtemp-0" style="color: rgb(59, 130, 246);">40</span><span class="drive-unit">°C</span>
-          <div class="bar-track" style="margin:10px 0 8px"><div class="bar-fill" id="dbar-0" style="width: 40%; background: rgb(59, 130, 246);"></div></div>
-          <div class="temp-footer"><span class="temp-mm" id="dmm-0">Min undefined° · Max undefined°</span><span class="badge badge-cool" id="dbadge-0">COOL</span></div></div><div id="dcard-1" class="drive-card"><div class="card-accent" style="/* background:linear-gradient(90deg,var(--green),transparent); */"></div>
-          <div class="drive-name" id="dname-1">WDC WD2002FAEX-007BA0 </div>
-          <span class="drive-temp" id="dtemp-1" style="color: rgb(59, 130, 246);">47</span><span class="drive-unit">°C</span>
-          <div class="bar-track" style="margin:10px 0 8px"><div class="bar-fill" id="dbar-1" style="width: 47%; background: rgb(59, 130, 246);"></div></div>
-          <div class="temp-footer"><span class="temp-mm" id="dmm-1">Min undefined° · Max undefined°</span><span class="badge badge-cool" id="dbadge-1">COOL</span></div></div><div id="dcard-2" class="drive-card"><div class="card-accent" style="/* background:linear-gradient(90deg,var(--green),transparent); */"></div>
-          <div class="drive-name" id="dname-2">Samsung SSD 870 EVO 500GB </div>
-          <span class="drive-temp" id="dtemp-2" style="color: rgb(59, 130, 246);">45</span><span class="drive-unit">°C</span>
-          <div class="bar-track" style="margin:10px 0 8px"><div class="bar-fill" id="dbar-2" style="width: 45%; background: rgb(59, 130, 246);"></div></div>
-          <div class="temp-footer"><span class="temp-mm" id="dmm-2">Min undefined° · Max undefined°</span><span class="badge badge-cool" id="dbadge-2">COOL</span></div></div></div>
-
-  <!-- RAM temp (hidden until available) -->
-  <div class="row2" id="ram-temp-wrap" style="margin-bottom: 12px; display: none;">
-    <div class="card">
-      <div class="card-accent" style="background:linear-gradient(90deg,var(--purple),transparent)"></div>
-      <div class="card-tag"><div class="chip" style="background:var(--purple)"></div>RAM · Temperature</div>
-      <span class="temp-num" id="ram-temp" style="color:var(--purple)">--</span><span class="temp-unit">°C</span>
-      <div class="bar-track"><div class="bar-fill" id="ram-temp-bar" style="background:var(--purple)"></div></div>
-      <div class="temp-footer"><span class="temp-mm" id="ram-mm">—</span><span class="badge badge-cool" id="ram-badge">—</span></div>
-    </div>
-    <div></div>
-  </div>
-
-  <!-- Activity bars -->
-  
-
-  <!-- Disk R/W + Network -->
-  
-
-  <!-- Detail: CPU + RAM -->
-  
-
-  <!-- Battery -->
-  
 
   <!-- Hardware Info -->
   <div class="hw-section">
     <div class="hw-section-title">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
       Thông tin phần cứng
     </div>
-    <div id="hw-root"><div class="hw-cols">
-    <div class="hw-col">
-      <div class="hw-col-label" style="background:rgba(59,130,246,.1);color:#3b82f6">🖥 Hệ thống &amp; CPU</div>
-      <div class="hw-card">
-    <div class="hw-card-head">
-      <div class="hw-icon" style="background:rgba(100,116,139,.15)">🖳</div>
-      <div><div class="hw-name">DESKTOP-80P73ES</div></div>
+    <div id="hw-root">
+      <div class="hw-loading">Đang tải dữ liệu...</div>
     </div>
-  </div><div class="hw-card">
-    <div class="hw-card-head">
-      <div class="hw-icon" style="background:rgba(167,139,250,.12)">🧠</div>
-      <div>
-        <div class="hw-name" style="color:var(--purple)">15.98 GB RAM</div>
-        
-      </div>
-    </div>
-  </div><div class="hw-card">
-    <div class="hw-card-head">
-      <div class="hw-icon" style="background:rgba(59,130,246,.12)">🖥</div>
-      <div><div class="hw-name">Intel Core i5-2500</div></div>
-    </div>
-  </div>
-    </div>
-    <div class="hw-col">
-      <div class="hw-col-label" style="background:rgba(245,158,11,.1);color:#f59e0b">🎮 GPU</div>
-      <div class="hw-card">
-    <div class="hw-card-head">
-      <div class="hw-icon" style="background:rgba(245,158,11,.12)">🎮</div>
-      <div><div class="hw-name">NVIDIA Quadro 2000</div></div>
-    </div>
-    <div class="hw-divider"></div>
-      <div class="hw-body">
-        <div><div class="hw-body-label">💨 Tốc độ quạt</div><div class="fan-item">
-        <span class="fan-name">GPU</span>
-        <div class="fan-bar-track"><div class="fan-bar-fill" style="width:27.7%;background:var(--green)"></div></div>
-        <span class="fan-rpm" style="color:var(--green)">1.245</span><span class="fan-unit">RPM</span>
-      </div></div>
-      </div>
-  </div>
-    </div>
-    <div class="hw-col">
-      <div class="hw-col-label" style="background:rgba(16,185,129,.1);color:#10b981">💿 Ổ cứng / SSD</div>
-      <div class="hw-card">
-    <div class="hw-card-head">
-      <div class="hw-icon" style="background:rgba(16,185,129,.12)">💿</div>
-      <div><div class="hw-name">WDC WD20EARX-00PASB0</div></div>
-    </div>
-    <div class="hw-divider"></div>
-      <div class="hw-body"><div class="smart-row"><div class="smart-box">
-        <div class="smart-key">Thời gian bật</div>
-        <div><span class="smart-num">14.460</span><span class="smart-unit"> giờ</span></div>
-      </div><div class="smart-box">
-        <div class="smart-key">Số lần bật</div>
-        <div><span class="smart-num">6.739</span><span class="smart-unit"> lần</span></div>
-      </div></div></div>
-  </div><div class="hw-card">
-    <div class="hw-card-head">
-      <div class="hw-icon" style="background:rgba(16,185,129,.12)">💿</div>
-      <div><div class="hw-name">WDC WD2002FAEX-007BA0 </div></div>
-    </div>
-    <div class="hw-divider"></div>
-      <div class="hw-body"><div class="smart-row"><div class="smart-box">
-        <div class="smart-key">Thời gian bật</div>
-        <div><span class="smart-num">18.031</span><span class="smart-unit"> giờ</span></div>
-      </div><div class="smart-box">
-        <div class="smart-key">Số lần bật</div>
-        <div><span class="smart-num">8.384</span><span class="smart-unit"> lần</span></div>
-      </div></div></div>
-  </div><div class="hw-card">
-    <div class="hw-card-head">
-      <div class="hw-icon" style="background:rgba(16,185,129,.12)">💿</div>
-      <div><div class="hw-name">Samsung SSD 870 EVO 500GB </div></div>
-    </div>
-    <div class="hw-divider"></div>
-      <div class="hw-body"><div class="smart-row"><div class="smart-box">
-        <div class="smart-key">Thời gian bật</div>
-        <div><span class="smart-num">3.792</span><span class="smart-unit"> giờ</span></div>
-      </div><div class="smart-box">
-        <div class="smart-key">Số lần bật</div>
-        <div><span class="smart-num">1.812</span><span class="smart-unit"> lần</span></div>
-      </div></div></div>
-  </div>
-    </div>
-  </div></div>
   </div>
 
 </div><!-- .shell -->
@@ -808,6 +716,5 @@ async function fetchHardware() {
 setTimeout(() => { fetchHardware(); setInterval(fetchHardware, 15000); }, 2500);
 
 </script>
-
-
-</body></html>
+</body>
+</html>
